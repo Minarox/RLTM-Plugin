@@ -7,11 +7,10 @@ BAKKESMOD_PLUGIN(DSCSPlugin, "DawaEsport Championship Plugin", "1.0", PERMISSION
 void DSCSPlugin::onLoad()
 {
 	// Connection au serveur
-	//gameWrapper->HookEvent("Function TAGame.GameEvent_Team_TA.OnAllTeamsCreated", std::bind(&DSCSPlugin::JoinSpectator, this));
-	//gameWrapper->HookEvent("Function TAGame.GameEvent_Team_TA.AllTeamsCreated", std::bind(&DSCSPlugin::JoinSpectator, this));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.AddGameBall", std::bind(&DSCSPlugin::JoinSpectator, this));
-	gameWrapper->HookEvent("Function TAGame.GFxData_LocalPlayer_TA.Spectate", std::bind(&DSCSPlugin::HideSpectatorUI, this));
-	// gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", std::bind(&DSCSPlugin::CycleHUD, this));
+	gameWrapper->HookEvent("Function TAGame.GFxData_LocalPlayer_TA.Spectate", std::bind(&DSCSPlugin::SetSpectatorUI, this, 400));
+	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", std::bind(&DSCSPlugin::SetSpectatorUI, this, 0));
+	gameWrapper->HookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs", std::bind(&DSCSPlugin::RemoveStatGraph, this));
 	
 	// Début du match
 	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", std::bind(&DSCSPlugin::ShowHUD, this));
@@ -25,10 +24,6 @@ void DSCSPlugin::onLoad()
 	// Fin du match
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnMatchWinnerSet", std::bind(&DSCSPlugin::MatchEnded, this));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.Destroyed", std::bind(&DSCSPlugin::HideHUD, this));
-
-
-
-	// gameWrapper->HookEvent("Function TAGame.GameEvent_TA.Destroyed", std::bind(&DSCSPlugin::HideHUD, this));
 }
 
 void DSCSPlugin::onUnload()
@@ -36,6 +31,8 @@ void DSCSPlugin::onUnload()
 	// Connection au serveur
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.AddGameBall");
 	gameWrapper->UnhookEvent("Function TAGame.GFxData_LocalPlayer_TA.Spectate");
+	gameWrapper->UnhookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD");
+	gameWrapper->UnhookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs");
 	
 	// Début du match
 	gameWrapper->UnhookEvent("Function GameEvent_TA.Countdown.BeginState");
@@ -62,14 +59,34 @@ void DSCSPlugin::JoinSpectator()
 	if (playerController.IsNull()) return;
 
 	playerController.Spectate();
-	// cvarManager->executeCommand("sleep 1500; unreal_command Spectate;");
 
-	this->HideSpectatorUI();
+	this->RemoveStatGraph();
+	this->SetSpectatorUI(400);
 }
 
-void DSCSPlugin::HideSpectatorUI()
+void DSCSPlugin::SetSpectatorUI(int sleep)
 {
-	this->Log("========= HideSpectatorUI =========");
+	if (!gameWrapper->IsInOnlineGame()) return;
+	ServerWrapper server = gameWrapper->GetOnlineGame();
+	if (server.IsNull()) return;	
+	
+	GameSettingPlaylistWrapper playlist = server.GetPlaylist();
+	if (!playlist.IsPrivateMatch() && !playlist.IsLanMatch()) return;
+
+	this->Log("========= SetSpectatorUI =========");
+	cvarManager->executeCommand("sleep " + std::to_string(sleep) + "; replay_gui hud 1; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
+}
+
+void DSCSPlugin::RemoveStatGraph()
+{
+	EngineTAWrapper engine = gameWrapper->GetEngine();
+	if (engine.IsNull()) return;
+
+	StatGraphSystemWrapper statGraphs = engine.GetStatGraphs();
+	if (statGraphs.IsNull()) return;
+
+	this->Log("========= RemoveStatGraph =========");
+	statGraphs.SetGraphLevel(6);
 }
 
 void DSCSPlugin::ShowHUD()

@@ -10,7 +10,8 @@ public:
 	virtual void onUnload();
 
 	void JoinSpectator();
-	void HideSpectatorUI();
+	void SetSpectatorUI(int sleep);
+	void RemoveStatGraph();
 	void ShowHUD();
 	void HideHUD();
 	void MatchEnded();
