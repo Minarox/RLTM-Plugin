@@ -12,12 +12,18 @@ public:
 	void JoinSpectator();
 	void SetSpectatorUI(int sleep);
 	void RemoveStatGraph();
-	void ShowHUD();
-	void HideHUD();
-	void MatchEnded();
+	void FetchStats();
 
-private:
-	bool matchInProgress = false;
+private:	
+	bool matchStatus = false;
+	bool playbackStatus = false;
+	bool highlightStatus = false;
+
+	bool IsGameValid();
+	void UpdateMatchStatus(bool status);
+	void UpdatePlaybackStatus(bool status);
+	void UpdateHighlightStatus(bool status);
+	void ResetStatus();
 	void Log(std::string msg);
 };
 
