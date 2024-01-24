@@ -3,6 +3,10 @@
 
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include <sio_client.h>
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 class DSCSPlugin : public BakkesMod::Plugin::BakkesModPlugin
 {

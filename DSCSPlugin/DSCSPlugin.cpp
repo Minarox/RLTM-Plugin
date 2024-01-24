@@ -112,40 +112,41 @@ void DSCSPlugin::FetchStats()
 	ServerWrapper server = gameWrapper->GetOnlineGame();
 
 	this->Log("========= MatchEnded =========");
+	json data;
 	std::map<std::string, std::string> matchValues;
 	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
 	
-	matchValues['score_team_1'] = std::to_string(teams.Get(0).GetScore())
-	matchValues['score_team_2'] = std::to_string(teams.Get(1).GetScore())
-	matchValues['arena'] = gameWrapper->GetCurrentMap();
-	matchValues['duration'] = std::to_string(match_started_at - match_ended_at);
+	data["score_team_1"] = teams.Get(0).GetScore();
+	data["score_team_2"] = teams.Get(1).GetScore();
+	data["arena"] = gameWrapper->GetCurrentMap();
+	data["duration"] = match_ended_at - match_started_at;
 
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 	for (int i = 0; i < players.Count(); i++) {
 		PriWrapper player = players.Get(i);
 		if (player.IsNull() || player.GetTeamNum() == 255) continue;
 
-		matchValues['stats'][i]['name'] = player.GetPlayerName().ToString();
-		matchValues['stats'][i]['id'] = player.GetUniqueIdWrapper().GetIdString();
-		matchValues['stats'][i]['uid'] = std::to_string(player.GetUniqueIdWrapper().GetUID());
-		matchValues['stats'][i]['team'] = std::to_string(player.GetTeamNum());
-		matchValues['stats'][i]['score'] = std::to_string(player.GetMatchScore());
-		matchValues['stats'][i]['goals'] = std::to_string(player.GetMatchGoals());
-		matchValues['stats'][i]['own_goals'] = std::to_string(player.GetMatchOwnGoals());
-		matchValues['stats'][i]['assists'] = std::to_string(player.GetMatchAssists());
-		matchValues['stats'][i]['saves'] = std::to_string(player.GetMatchSaves());
-		matchValues['stats'][i]['shots'] = std::to_string(player.GetMatchShots());
-		matchValues['stats'][i]['demolishes'] = std::to_string(player.GetMatchDemolishes());
-		matchValues['stats'][i]['bonus_xp'] = std::to_string(player.GetMatchBonusXP());
-		matchValues['stats'][i]['damage'] = std::to_string(player.GetMatchBreakoutDamage());
-		matchValues['stats'][i]['mvp'] = std::to_string(player.GetbMatchMVP());
-		matchValues['stats'][i]['boost_pickups'] = std::to_string(player.GetBoostPickups());
-		matchValues['stats'][i]['ball_touches'] = std::to_string(player.GetBallTouches());
-		matchValues['stats'][i]['car_touches'] = std::to_string(player.GetCarTouches());
+		data["stats"][i]["name"] = player.GetPlayerName().ToString();
+		data["stats"][i]["id"] = player.GetUniqueIdWrapper().GetIdString();
+		data["stats"][i]["uid"] = player.GetUniqueIdWrapper().GetUID();
+		data["stats"][i]["team"] = player.GetTeamNum();
+		data["stats"][i]["score"] = player.GetMatchScore();
+		data["stats"][i]["goals"] = player.GetMatchGoals();
+		data["stats"][i]["own_goals"] = player.GetMatchOwnGoals();
+		data["stats"][i]["assists"] = player.GetMatchAssists();
+		data["stats"][i]["saves"] = player.GetMatchSaves();
+		data["stats"][i]["shots"] = player.GetMatchShots();
+		data["stats"][i]["demolishes"] = player.GetMatchDemolishes();
+		data["stats"][i]["bonus_xp"] = player.GetMatchBonusXP();
+		data["stats"][i]["damage"] = player.GetMatchBreakoutDamage();
+		data["stats"][i]["mvp"] = player.GetbMatchMVP();
+		data["stats"][i]["boost_pickups"] = player.GetBoostPickups();
+		data["stats"][i]["ball_touches"] = player.GetBallTouches();
+		data["stats"][i]["car_touches"] = player.GetCarTouches();
 	}
 
 	if (socket.opened()) {
-		socket.socket()->emit("match_ended", matchValues);
+		socket.socket()->emit("match_ended", data.dump());
 	}
 }
 
@@ -200,11 +201,13 @@ void DSCSPlugin::UpdateMatchStatus(bool status)
 	}
 
 	if (matchStatus) {
+		/* Match en cours */
 		match_started_at = std::time(0);
 		this->SetReplayAutoSave(true);
 		// Montrer HUD stream
 	}
 	else {
+		/* Match termine */
 		match_ended_at = std::time(0);
 		this->FetchStats();
 		// Cacher HUD stream
@@ -223,9 +226,11 @@ void DSCSPlugin::UpdatePlaybackStatus(bool status)
 	}
 
 	if (playbackStatus) {
+		/* Replay du but en cours */
 		// Montrer "Replay" HUD stream
 	}
 	else {
+		/* Replay du but termine */
 		// Cacher "Replay" HUD stream
 	}
 }
@@ -241,9 +246,11 @@ void DSCSPlugin::UpdateHighlightStatus(bool status)
 	}
 
 	if (highlightStatus) {
+		/* Replay de fin de match en cours */
 		this->ReadyUp();
 	}
 	else {
+		/* Replay de fin de match termine */
 		this->SetReplayAutoSave(false);
 	}
 }
