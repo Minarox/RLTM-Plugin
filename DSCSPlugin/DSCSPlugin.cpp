@@ -17,7 +17,6 @@ void DSCSPlugin::onLoad()
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay", std::bind(&DSCSPlugin::UpdateHighlightStatus, this, true));
 	gameWrapper->HookEvent("Function ReplayDirector_TA.PlayingHighlights.Destroyed", std::bind(&DSCSPlugin::UpdateHighlightStatus, this, false));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&DSCSPlugin::ResetStatus, this));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.Destroyed", std::bind(&DSCSPlugin::ResetStatus, this));
 
 	// Actions par defaut
 	gameWrapper->HookEventPost("Function TAGame.GameEvent_Soccar_TA.AddGameBall", std::bind(&DSCSPlugin::JoinSpectator, this));
@@ -58,7 +57,6 @@ void DSCSPlugin::onUnload()
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay");
 	gameWrapper->UnhookEvent("Function ReplayDirector_TA.PlayingHighlights.Destroyed");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed");
-	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.Destroyed");
 
 	gameWrapper->UnhookEventPost("Function TAGame.GameEvent_Soccar_TA.AddGameBall");
 	gameWrapper->UnhookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx");
