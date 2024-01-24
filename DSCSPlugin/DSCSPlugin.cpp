@@ -9,7 +9,7 @@ BAKKESMOD_PLUGIN(DSCSPlugin, "DawaEsport Championship Plugin", "1.0", PERMISSION
 */
 void DSCSPlugin::onLoad()
 {
-	// États du match
+	// Etats du match
 	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", std::bind(&DSCSPlugin::UpdateMatchStatus, this, true));
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", std::bind(&DSCSPlugin::UpdatePlaybackStatus, this, true));
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", std::bind(&DSCSPlugin::UpdatePlaybackStatus, this, false));
@@ -19,7 +19,7 @@ void DSCSPlugin::onLoad()
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&DSCSPlugin::ResetStatus, this));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.Destroyed", std::bind(&DSCSPlugin::ResetStatus, this));
 
-	// Actions par défaut
+	// Actions par defaut
 	gameWrapper->HookEventPost("Function TAGame.GameEvent_Soccar_TA.AddGameBall", std::bind(&DSCSPlugin::JoinSpectator, this));
 	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx", std::bind(&DSCSPlugin::SetSpectatorUI, this, 100));
 	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", std::bind(&DSCSPlugin::SetSpectatorUI, this, 0));
@@ -112,39 +112,40 @@ void DSCSPlugin::FetchStats()
 	ServerWrapper server = gameWrapper->GetOnlineGame();
 
 	this->Log("========= MatchEnded =========");
-
+	std::map<std::string, std::string> matchValues;
 	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
-	this->Log(("Map: " + gameWrapper->GetCurrentMap()).c_str());
-	this->Log(("Score: Bleu (" + std::to_string(teams.Get(0).GetScore()) + ") - Orange (" + std::to_string(teams.Get(1).GetScore()) + ")").c_str());
-
-	if (socket.opened() > 0) {
-		this->Log("========= Socket opened =========");
-		socket.socket()->emit("match_ended", "Score: Bleu (" + std::to_string(teams.Get(0).GetScore()) + ") - Orange (" + std::to_string(teams.Get(1).GetScore()) + ")");
-	}
+	
+	matchValues['score_team_1'] = std::to_string(teams.Get(0).GetScore())
+	matchValues['score_team_2'] = std::to_string(teams.Get(1).GetScore())
+	matchValues['arena'] = gameWrapper->GetCurrentMap();
+	matchValues['duration'] = std::to_string(match_started_at - match_ended_at);
 
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 	for (int i = 0; i < players.Count(); i++) {
 		PriWrapper player = players.Get(i);
 		if (player.IsNull() || player.GetTeamNum() == 255) continue;
 
-		this->Log("========= Stat =========");
-		this->Log(("Player " + player.GetPlayerName().ToString()).c_str());
-		this->Log(("Player ID " + player.GetUniqueIdWrapper().GetIdString()).c_str());
-		this->Log(("Player UID " + std::to_string(player.GetUniqueIdWrapper().GetUID())).c_str());
-		this->Log(("Team " + std::to_string(player.GetTeamNum())).c_str());
-		this->Log(("Score " + std::to_string(player.GetMatchScore())).c_str());
-		this->Log(("Goals " + std::to_string(player.GetMatchGoals())).c_str());
-		this->Log(("Own goals " + std::to_string(player.GetMatchOwnGoals())).c_str());
-		this->Log(("Assists " + std::to_string(player.GetMatchAssists())).c_str());
-		this->Log(("Saves " + std::to_string(player.GetMatchSaves())).c_str());
-		this->Log(("Shots " + std::to_string(player.GetMatchShots())).c_str());
-		this->Log(("Demolishes " + std::to_string(player.GetMatchDemolishes())).c_str());
-		this->Log(("Bonus XP " + std::to_string(player.GetMatchBonusXP())).c_str());
-		this->Log(("Damage " + std::to_string(player.GetMatchBreakoutDamage())).c_str());
-		this->Log(("MVP " + std::to_string(player.GetbMatchMVP())).c_str());
-		this->Log(("Boost Pickups " + std::to_string(player.GetBoostPickups())).c_str());
-		this->Log(("Ball Touches " + std::to_string(player.GetBallTouches())).c_str());
-		this->Log(("Car Touches " + std::to_string(player.GetCarTouches())).c_str());
+		matchValues['stats'][i]['name'] = player.GetPlayerName().ToString();
+		matchValues['stats'][i]['id'] = player.GetUniqueIdWrapper().GetIdString();
+		matchValues['stats'][i]['uid'] = std::to_string(player.GetUniqueIdWrapper().GetUID());
+		matchValues['stats'][i]['team'] = std::to_string(player.GetTeamNum());
+		matchValues['stats'][i]['score'] = std::to_string(player.GetMatchScore());
+		matchValues['stats'][i]['goals'] = std::to_string(player.GetMatchGoals());
+		matchValues['stats'][i]['own_goals'] = std::to_string(player.GetMatchOwnGoals());
+		matchValues['stats'][i]['assists'] = std::to_string(player.GetMatchAssists());
+		matchValues['stats'][i]['saves'] = std::to_string(player.GetMatchSaves());
+		matchValues['stats'][i]['shots'] = std::to_string(player.GetMatchShots());
+		matchValues['stats'][i]['demolishes'] = std::to_string(player.GetMatchDemolishes());
+		matchValues['stats'][i]['bonus_xp'] = std::to_string(player.GetMatchBonusXP());
+		matchValues['stats'][i]['damage'] = std::to_string(player.GetMatchBreakoutDamage());
+		matchValues['stats'][i]['mvp'] = std::to_string(player.GetbMatchMVP());
+		matchValues['stats'][i]['boost_pickups'] = std::to_string(player.GetBoostPickups());
+		matchValues['stats'][i]['ball_touches'] = std::to_string(player.GetBallTouches());
+		matchValues['stats'][i]['car_touches'] = std::to_string(player.GetCarTouches());
+	}
+
+	if (socket.opened()) {
+		socket.socket()->emit("match_ended", matchValues);
 	}
 }
 
@@ -192,13 +193,19 @@ void DSCSPlugin::UpdateMatchStatus(bool status)
 {
 	if (matchStatus == status) return;
 	matchStatus = status;
-	this->Log(("========= matchStatus " + std::to_string(status) + " =========").c_str());
+	this->Log(("========= matchStatus " + std::to_string(matchStatus) + " =========").c_str());
+
+	if (socket.opened()) {
+		socket.socket()->emit("match_status", std::to_string(matchStatus));
+	}
 
 	if (matchStatus) {
+		match_started_at = std::time(0);
 		this->SetReplayAutoSave(true);
 		// Montrer HUD stream
 	}
 	else {
+		match_ended_at = std::time(0);
 		this->FetchStats();
 		// Cacher HUD stream
 	}
@@ -209,13 +216,17 @@ void DSCSPlugin::UpdatePlaybackStatus(bool status)
 	if (playbackStatus == status) return;
 	if (status && !matchStatus) this->UpdateMatchStatus(true);
 	playbackStatus = status;
-	this->Log(("========= playbackStatus " + std::to_string(status) + " =========").c_str());
+	this->Log(("========= playbackStatus " + std::to_string(playbackStatus) + " =========").c_str());
+
+	if (socket.opened()) {
+		socket.socket()->emit("playback_status", std::to_string(playbackStatus));
+	}
 
 	if (playbackStatus) {
-		// Montrer HUD stream "Replay"
+		// Montrer "Replay" HUD stream
 	}
 	else {
-		// Cacher HUD stream "Replay"
+		// Cacher "Replay" HUD stream
 	}
 }
 
@@ -223,7 +234,11 @@ void DSCSPlugin::UpdateHighlightStatus(bool status)
 {
 	if (highlightStatus == status) return;
 	highlightStatus = status;
-	this->Log(("========= highlightStatus " + std::to_string(status) + " =========").c_str());
+	this->Log(("========= highlightStatus " + std::to_string(highlightStatus) + " =========").c_str());
+
+	if (socket.opened()) {
+		socket.socket()->emit("highlight_status", std::to_string(highlightStatus));
+	}
 
 	if (highlightStatus) {
 		this->ReadyUp();
@@ -237,13 +252,21 @@ void DSCSPlugin::ResetStatus()
 {
 	this->Log("========= ResetStatus =========");
 
+	if (socket.opened()) {
+		socket.socket()->emit("reset_status");
+	}
+
 	matchStatus = false;
 	playbackStatus = false;
 	highlightStatus = false;
 	this->SetReplayAutoSave(false);
 }
 
-void DSCSPlugin::Log(std::string msg)
+void DSCSPlugin::Log(std::string message)
 {
-	cvarManager->log(msg);
+	cvarManager->log(message);
+
+	if (socket.opened()) {
+		socket.socket()->emit("log", message);
+	}
 }

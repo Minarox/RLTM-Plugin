@@ -19,6 +19,8 @@ public:
 
 private:
 	sio::client socket;
+	std::time_t match_started_at = std::time(0);
+	std::time_t match_ended_at = std::time(0);
 	bool matchStatus = false;
 	bool playbackStatus = false;
 	bool highlightStatus = false;
@@ -28,6 +30,6 @@ private:
 	void UpdatePlaybackStatus(bool status);
 	void UpdateHighlightStatus(bool status);
 	void ResetStatus();
-	void Log(std::string msg);
+	void Log(std::string message);
 };
 
