@@ -18,6 +18,7 @@ public:
 	void SetSpectatorUI(int sleep);
 	void RemoveStatGraph();
 	void FetchStats();
+	void FetchPlayers();
 	void SetReplayAutoSave(bool status);
 	void ReadyUp();
 

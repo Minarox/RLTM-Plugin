@@ -9,6 +9,13 @@ BAKKESMOD_PLUGIN(DSCSPlugin, "DawaEsport Championship Plugin", "1.0", PERMISSION
 */
 void DSCSPlugin::onLoad()
 {
+	try {
+		socket.connect("ws://localhost:3000");
+	}
+	catch (std::exception& e) {
+		this->Log("========= Unable to connect to Back-End =========");
+	}
+
 	// Etats du match
 	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", std::bind(&DSCSPlugin::UpdateMatchStatus, this, true));
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", std::bind(&DSCSPlugin::UpdatePlaybackStatus, this, true));
@@ -35,13 +42,6 @@ void DSCSPlugin::onLoad()
 		if (localPrimaryPlayer.IsNull() || localPrimaryPlayer.IsSpectator()) return;
 		
 		this->JoinSpectator();
-	}
-	
-	try {
-		socket.connect("ws://localhost:3000");
-	}
-	catch (std::exception& e) {
-		this->Log("========= Unable to connect to Back-End =========");
 	}
 }
 
@@ -102,6 +102,29 @@ void DSCSPlugin::RemoveStatGraph()
 
 	this->Log("========= RemoveStatGraph =========");
 	statGraphs.SetGraphLevel(6);
+}
+
+void DSCSPlugin::FetchPlayers()
+{
+	if (!this->IsGameValid()) return;
+	ServerWrapper server = gameWrapper->GetOnlineGame();
+
+	this->Log("========= FetchPlayers =========");
+	json data;
+	ArrayWrapper<PriWrapper> players = server.GetPRIs();
+	for (int i = 0; i < players.Count(); i++) {
+		PriWrapper player = players.Get(i);
+		if (player.IsNull() || player.GetTeamNum() == 255) continue;
+
+		data[i]["name"] = player.GetPlayerName().ToString();
+		data[i]["id"] = player.GetUniqueIdWrapper().GetIdString();
+		data[i]["uid"] = player.GetUniqueIdWrapper().GetUID();
+		data[i]["team"] = player.GetTeamNum();
+	}
+
+	if (socket.opened()) {
+		socket.socket()->emit("check_players", data.dump());
+	}
 }
 
 void DSCSPlugin::FetchStats()
@@ -202,6 +225,7 @@ void DSCSPlugin::UpdateMatchStatus(bool status)
 		/* Match en cours */
 		match_started_at = std::time(0);
 		this->SetReplayAutoSave(true);
+		this->FetchPlayers();
 		// Montrer HUD stream
 	}
 	else {
@@ -224,6 +248,7 @@ void DSCSPlugin::UpdatePlaybackStatus(bool status)
 	}
 
 	if (playbackStatus) {
+		this->FetchPlayers();
 		/* Replay du but en cours */
 		// Montrer "Replay" HUD stream
 	}
