@@ -1,5 +1,5 @@
 ﻿# DSCSPlugin
-Plugin BakkesMod de récupération des données et événements en jeu pour la compétiton DawaEsport ChampionShip.
+Plugin BakkesMod de récupération des données et événements en jeu pour le [Back-End](https://github.com/Minarox/DSCSBack) de la compétiton DawaEsport ChampionShip.
 
 ## Fonctionnalités
 - Sélection automatique du mode spectateur avec suppression des éléments inutiles de l'interface
