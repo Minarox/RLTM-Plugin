@@ -6,6 +6,20 @@
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocket.h>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
+// The structure of a ticker stat event
+struct StatTickerParams {
+    uintptr_t Receiver; // person who got a stat
+    uintptr_t Victim; // person who is victim of a stat (only exists for demos afaik)
+    uintptr_t StatEvent; // wrapper for the stat event
+};
+
+struct BoostPickupParams {
+	uintptr_t car;
+};
 
 class DSCSPlugin : public BakkesMod::Plugin::BakkesModPlugin
 {
@@ -15,7 +29,11 @@ public:
 
 private:
 	ix::WebSocket webSocket;
+	bool game_in_progress = false;
+	bool playback_in_progress = false;
 
 	void LoadWebSocket();
+	void SetSpectatorUI(int sleep);
+	void RemoveStatGraph();
 	void Log(std::string message);
 };
