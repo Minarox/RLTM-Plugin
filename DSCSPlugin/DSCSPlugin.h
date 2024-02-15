@@ -17,10 +17,6 @@ struct StatTickerParams {
     uintptr_t StatEvent; // wrapper for the stat event
 };
 
-struct BoostPickupParams {
-	uintptr_t car;
-};
-
 class DSCSPlugin : public BakkesMod::Plugin::BakkesModPlugin
 {
 public:
@@ -31,6 +27,7 @@ private:
 	ix::WebSocket webSocket;
 	bool game_in_progress = false;
 	bool playback_in_progress = false;
+	std::time_t match_started_at = std::time(0);
 
 	void LoadWebSocket();
 	void SetSpectatorUI(int sleep);

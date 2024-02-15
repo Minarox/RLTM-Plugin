@@ -89,6 +89,7 @@ void DSCSPlugin::onLoad()
 			data["message"]["arena"] = gameWrapper->GetCurrentMap();
 
 			webSocket.send(data.dump());
+			match_started_at = std::time(0);
 		});
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnMatchWinnerSet",
@@ -106,6 +107,7 @@ void DSCSPlugin::onLoad()
 			data["message"]["score_team_1"] = teams.Get(0).GetScore();
 			data["message"]["score_team_2"] = teams.Get(1).GetScore();
 			data["message"]["arena"] = gameWrapper->GetCurrentMap();
+			data["message"]["duration"] = std::time(0) - match_started_at;
 
 			ArrayWrapper<PriWrapper> players = server.GetPRIs();
 			int i = 0;
