@@ -15,6 +15,7 @@ void DSCSPlugin::onLoad()
 
 	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			StatTickerParams* pStruct = (StatTickerParams*)params;
 			PriWrapper receiver = PriWrapper(pStruct->Receiver);
 			StatEventWrapper statEvent = StatEventWrapper(pStruct->StatEvent);
@@ -35,48 +36,49 @@ void DSCSPlugin::onLoad()
 
 	/*gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.VehiclePickup_Boost_TA.Pickup",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (playback_in_progress) return;
+			if (playback_in_progress || !this->CheckValidGame()) return;
 			webSocket.send("Boost pick");
 		});*/
 
 	/*gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.Car_TA.OnHitBall",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (playback_in_progress) return;
+			if (playback_in_progress || !this->CheckValidGame()) return;
 			webSocket.send("Ball hit");
 		});*/
 
 	/*gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.Car_TA.OnSuperSonicChanged",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (playback_in_progress) return;
+			if (playback_in_progress || !this->CheckValidGame()) return;
 			webSocket.send("Car supersonic changed");
 		});*/
 
 	/*gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.VehiclePickup_Boost_TA.PlayPickedUpFX",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (playback_in_progress) return;
+			if (playback_in_progress || !this->CheckValidGame()) return;
 			webSocket.send("Car pick boost");
 		});*/
 
 	/*gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.CarComponent_Boost_TA.EventBoostAmountChanged",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (playback_in_progress) return;
+			if (playback_in_progress || !this->CheckValidGame()) return;
 			webSocket.send("Car boost");
 		});*/
 
 	/*gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (!game_in_progress) return;
+			if (!game_in_progress || !this->CheckValidGame()) return;
 			webSocket.send("Normal time updated");
 		});*/
 
 	/*gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (!game_in_progress) return;
+			if (!game_in_progress || !this->CheckValidGame()) return;
 			webSocket.send("Overtime time updated");
 		});*/
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_TA.Countdown.BeginState",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			playback_in_progress = false;
 			if (game_in_progress) return;
 			game_in_progress = true;
@@ -94,6 +96,7 @@ void DSCSPlugin::onLoad()
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnMatchWinnerSet",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			game_in_progress = false;
 			playback_in_progress = true;
 
@@ -130,6 +133,7 @@ void DSCSPlugin::onLoad()
 
 	/*gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_TA.Countdown.BeginState",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			game_in_progress = true;
 			playback_in_progress = false;
 			if (game_in_progress) return;
@@ -142,6 +146,7 @@ void DSCSPlugin::onLoad()
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			playback_in_progress = true;
 
 			json data;
@@ -153,6 +158,7 @@ void DSCSPlugin::onLoad()
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_Soccar_TA.ReplayPlayback.EndState",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			playback_in_progress = false;
 
 			json data;
@@ -164,6 +170,7 @@ void DSCSPlugin::onLoad()
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			playback_in_progress = true;
 
 			json data;
@@ -175,6 +182,7 @@ void DSCSPlugin::onLoad()
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function ReplayDirector_TA.PlayingHighlights.Destroyed",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			playback_in_progress = false;
 
 			json data;
@@ -186,6 +194,7 @@ void DSCSPlugin::onLoad()
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.Destroyed",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
+			if (!this->CheckValidGame()) return;
 			game_in_progress = false;
 			playback_in_progress = false;
 
@@ -262,9 +271,8 @@ void DSCSPlugin::LoadWebSocket()
 
 void DSCSPlugin::SetSpectatorUI(int sleep)
 {
-	ServerWrapper server = gameWrapper->GetOnlineGame();
-	if (server.IsNull()) return;
-
+	if (!this->CheckValidGame()) return;
+	ServerWrapper server = gameWrapper->GetCurrentGameState();
 	PlayerControllerWrapper localPrimaryPlayerController = server.GetLocalPrimaryPlayer();
 	if (localPrimaryPlayerController.IsNull()) return;
 
@@ -275,11 +283,23 @@ void DSCSPlugin::SetSpectatorUI(int sleep)
 
 void DSCSPlugin::RemoveStatGraph()
 {
+	if (!this->CheckValidGame()) return;
 	EngineTAWrapper engine = gameWrapper->GetEngine();
 	if (engine.IsNull()) return;
 
 	StatGraphSystemWrapper statGraphs = engine.GetStatGraphs();
 	if (!statGraphs.IsNull()) statGraphs.SetGraphLevel(6);
+}
+
+bool DSCSPlugin::CheckValidGame()
+{
+	ServerWrapper sw = gameWrapper->GetCurrentGameState();
+	if (!sw) return false;
+
+	GameSettingPlaylistWrapper playlist = sw.GetPlaylist();
+	if (!playlist) return false;
+	int playlistID = playlist.GetPlaylistId();
+	return playlistID == 6;
 }
 
 void DSCSPlugin::Log(std::string message)

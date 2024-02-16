@@ -32,5 +32,6 @@ private:
 	void LoadWebSocket();
 	void SetSpectatorUI(int sleep);
 	void RemoveStatGraph();
+	bool CheckValidGame();
 	void Log(std::string message);
 };
