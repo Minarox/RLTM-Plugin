@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "DSCSPlugin.h"
 
-BAKKESMOD_PLUGIN(DSCSPlugin, "DawaEsport Championship Plugin", "1.0", PERMISSION_ALL)
+BAKKESMOD_PLUGIN(DSCSPlugin, "DawaEsport Championship Plugin", "1.0", PLUGINTYPE_SPECTATOR)
 
 /*
 	--- Public ---
@@ -79,9 +79,11 @@ void DSCSPlugin::onLoad()
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_TA.Countdown.BeginState",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!this->CheckValidGame()) return;
+
 			playback_in_progress = false;
 			if (game_in_progress) return;
 			game_in_progress = true;
+			this->SetReplayAutoSave(true);
 
 			ServerWrapper server = gameWrapper->GetCurrentGameState();
 			if (server.IsNull()) return;
@@ -183,6 +185,7 @@ void DSCSPlugin::onLoad()
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function ReplayDirector_TA.PlayingHighlights.Destroyed",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!this->CheckValidGame()) return;
+			this->SetReplayAutoSave(false);
 			playback_in_progress = false;
 
 			json data;
@@ -194,7 +197,7 @@ void DSCSPlugin::onLoad()
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.Destroyed",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (!this->CheckValidGame()) return;
+			this->SetReplayAutoSave(false);
 			game_in_progress = false;
 			playback_in_progress = false;
 
@@ -222,7 +225,6 @@ void DSCSPlugin::onUnload()
 	//gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated");
 	gameWrapper->UnhookEvent("Function GameEvent_TA.Countdown.BeginState");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnMatchWinnerSet");
-	//gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnMatchWinnerSet");
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState");
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay");
@@ -289,6 +291,11 @@ void DSCSPlugin::RemoveStatGraph()
 
 	StatGraphSystemWrapper statGraphs = engine.GetStatGraphs();
 	if (!statGraphs.IsNull()) statGraphs.SetGraphLevel(6);
+}
+
+void DSCSPlugin::SetReplayAutoSave(bool status)
+{
+	cvarManager->executeCommand("ranked_autosavereplay_all " + std::to_string(status ? 1 : 0), false);
 }
 
 bool DSCSPlugin::CheckValidGame()
