@@ -180,12 +180,12 @@ void DSCSPlugin::onLoad()
 			data["message"] = true;
 
 			webSocket.send(data.dump());
+			this->SetReady();
 		});
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function ReplayDirector_TA.PlayingHighlights.Destroyed",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!this->CheckValidGame()) return;
-			this->SetReplayAutoSave(false);
 			playback_in_progress = false;
 
 			json data;
@@ -285,7 +285,6 @@ void DSCSPlugin::SetSpectatorUI(int sleep)
 
 void DSCSPlugin::RemoveStatGraph()
 {
-	if (!this->CheckValidGame()) return;
 	EngineTAWrapper engine = gameWrapper->GetEngine();
 	if (engine.IsNull()) return;
 
@@ -296,6 +295,18 @@ void DSCSPlugin::RemoveStatGraph()
 void DSCSPlugin::SetReplayAutoSave(bool status)
 {
 	cvarManager->executeCommand("ranked_autosavereplay_all " + std::to_string(status ? 1 : 0), false);
+}
+
+void DSCSPlugin::SetReady()
+{
+	ServerWrapper server = gameWrapper->GetOnlineGame();
+
+	PlayerControllerWrapper playerController = gameWrapper->GetPlayerController();
+	if (playerController.IsNull()) return;
+
+	PriWrapper player = playerController.GetPRI();
+	if (player.IsNull()) return;
+	player.ServerReadyUp();
 }
 
 bool DSCSPlugin::CheckValidGame()

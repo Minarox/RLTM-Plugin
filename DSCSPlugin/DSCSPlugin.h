@@ -33,6 +33,7 @@ private:
 	void SetSpectatorUI(int sleep);
 	void RemoveStatGraph();
 	void SetReplayAutoSave(bool status);
+	void SetReady();
 	bool CheckValidGame();
 	void Log(std::string message);
 };
