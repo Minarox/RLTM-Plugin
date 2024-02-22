@@ -92,12 +92,8 @@ void DSCSPlugin::onLoad()
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!game_in_progress || !this->CheckValidGame()) return;
 
-			if (overtime_in_progress) {
-				game_time += 1;
-			}
-			else {
-				game_time -= 1;
-			}
+			if (overtime_in_progress) game_time += 1;
+			else game_time -= 1;
 		
 			total_game_time += 1;
 
