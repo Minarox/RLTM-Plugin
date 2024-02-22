@@ -10,11 +10,10 @@
 
 using json = nlohmann::json;
 
-// The structure of a ticker stat event
 struct StatTickerParams {
-    uintptr_t Receiver; // person who got a stat
-    uintptr_t Victim; // person who is victim of a stat (only exists for demos afaik)
-    uintptr_t StatEvent; // wrapper for the stat event
+    uintptr_t Receiver;
+    uintptr_t Victim;
+    uintptr_t StatEvent;
 };
 
 class DSCSPlugin : public BakkesMod::Plugin::BakkesModPlugin
