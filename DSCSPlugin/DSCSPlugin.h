@@ -25,8 +25,10 @@ public:
 private:
 	ix::WebSocket webSocket;
 	bool game_in_progress = false;
+	bool overtime_in_progress = false;
 	bool playback_in_progress = false;
-	std::time_t match_started_at = std::time(0);
+	int game_time = 0;
+	int total_game_time = 0;
 
 	void LoadWebSocket();
 	void SetSpectatorUI(int sleep);

@@ -93,25 +93,19 @@ void DSCSPlugin::onLoad()
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!game_in_progress || !this->CheckValidGame()) return;
 
-			ServerWrapper server = gameWrapper.GetCurrentGameState();
-			if (server.IsNull()) return;
+			if (overtime_in_progress) {
+				game_time += 1;
+			}
+			else {
+				game_time -= 1;
+			}
+		
+			total_game_time += 1;
 
 			json data;
 			data["topic"] = "game_time";
-			data["message"]["overtime"] = false;
-			data["message"]["GetGameTime"] = server.GetGameTime();
-			data["message"]["GetbOverTime"] = server.GetbOverTime();
-			data["message"]["GetWarmupTime"] = server.GetWarmupTime();
-			data["message"]["GetScoreSlomoTime"] = server.GetScoreSlomoTime();
-			data["message"]["GetGameTimeRemaining"] = server.GetGameTimeRemaining();
-			data["message"]["GetWaitTimeRemaining"] = server.GetWaitTimeRemaining();
-			data["message"]["GetOvertimeTimePlayed"] = server.GetOvertimeTimePlayed();
-			data["message"]["GetTotalGameTimePlayed"] = server.GetTotalGameTimePlayed();
-			data["message"]["GetCountdownTime"] = server.GetCountdownTime();
-			data["message"]["GetFinishTime"] = server.GetFinishTime();
-			data["message"]["GetRespawnTime"] = server.GetRespawnTime();
-			data["message"]["GetMatchTimeDilation"] = server.GetMatchTimeDilation();
-			data["message"]["GetGameStateTimeRemaining"] = server.GetGameStateTimeRemaining();
+			data["message"]["overtime"] = overtime_in_progress;
+			data["message"]["time"] = game_time;
 
 			webSocket.send(data.dump());
 		});
@@ -119,27 +113,12 @@ void DSCSPlugin::onLoad()
 	// Temps de jeu (overtime)
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
-			if (!game_in_progress || !this->CheckValidGame()) return;
+			if (!game_in_progress || overtime_in_progress || !this->CheckValidGame()) return;
 
-			ServerWrapper server = gameWrapper.GetCurrentGameState();
-			if (server.IsNull()) return;
+			overtime_in_progress = true;
 
 			json data;
-			data["topic"] = "game_time";
-			data["message"]["overtime"] = false;
-			data["message"]["GetGameTime"] = server.GetGameTime();
-			data["message"]["GetbOverTime"] = server.GetbOverTime();
-			data["message"]["GetWarmupTime"] = server.GetWarmupTime();
-			data["message"]["GetScoreSlomoTime"] = server.GetScoreSlomoTime();
-			data["message"]["GetGameTimeRemaining"] = server.GetGameTimeRemaining();
-			data["message"]["GetWaitTimeRemaining"] = server.GetWaitTimeRemaining();
-			data["message"]["GetOvertimeTimePlayed"] = server.GetOvertimeTimePlayed();
-			data["message"]["GetTotalGameTimePlayed"] = server.GetTotalGameTimePlayed();
-			data["message"]["GetCountdownTime"] = server.GetCountdownTime();
-			data["message"]["GetFinishTime"] = server.GetFinishTime();
-			data["message"]["GetRespawnTime"] = server.GetRespawnTime();
-			data["message"]["GetMatchTimeDilation"] = server.GetMatchTimeDilation();
-			data["message"]["GetGameStateTimeRemaining"] = server.GetGameStateTimeRemaining();
+			data["topic"] = "overtime";
 
 			webSocket.send(data.dump());
 		});
@@ -149,8 +128,7 @@ void DSCSPlugin::onLoad()
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!this->CheckValidGame()) return;
 			playback_in_progress = false;
-
-			// TODO: If regular game time = 0, send "overtime_start" event
+			overtime_in_progress = false;
 
 			if (game_in_progress) return;
 			game_in_progress = true;
@@ -162,9 +140,11 @@ void DSCSPlugin::onLoad()
 			json data;
 			data["topic"] = "game_start";
 			data["message"]["arena"] = gameWrapper->GetCurrentMap();
+			data["message"]["time"] = server.GetGameTime();
 
 			webSocket.send(data.dump());
-			match_started_at = std::time(0);
+			game_time = server.GetGameTime();
+			total_game_time = 0;
 		});
 
 	// Fin de la partie
@@ -184,7 +164,7 @@ void DSCSPlugin::onLoad()
 			data["message"]["score_team_1"] = teams.Get(0).GetScore();
 			data["message"]["score_team_2"] = teams.Get(1).GetScore();
 			data["message"]["arena"] = gameWrapper->GetCurrentMap();
-			data["message"]["duration"] = std::time(0) - match_started_at;
+			data["message"]["duration"] = total_game_time;
 
 			ArrayWrapper<PriWrapper> players = server.GetPRIs();
 			int i = 0;
@@ -264,6 +244,9 @@ void DSCSPlugin::onLoad()
 			this->SetReplayAutoSave(false);
 			game_in_progress = false;
 			playback_in_progress = false;
+			overtime_in_progress = false;
+			game_time = 0;
+			total_game_time = 0;
 
 			json data;
 			data["topic"] = "destroyed";
@@ -286,8 +269,8 @@ void DSCSPlugin::onUnload()
 	//gameWrapper->UnhookEventPost("Function TAGame.Car_TA.OnHitBall");
 	//gameWrapper->UnhookEventPost("Function TAGame.VehiclePickup_Boost_TA.PlayPickedUpFX");
 	//gameWrapper->UnhookEventPost("Function TAGame.CarComponent_Boost_TA.EventBoostAmountChanged");
-	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.AddCar");
-	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.RemoveCar");
+	//gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.AddCar");
+	//gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.RemoveCar");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated");
 	gameWrapper->UnhookEvent("Function GameEvent_TA.Countdown.BeginState");
@@ -295,7 +278,7 @@ void DSCSPlugin::onUnload()
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState");
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay");
-	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay");
+	gameWrapper->UnhookEvent("Function ReplayDirector_TA.PlayingHighlights.Destroyed");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed");
 
 	gameWrapper->UnhookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx");
