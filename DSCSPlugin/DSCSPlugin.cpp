@@ -21,6 +21,8 @@ void DSCSPlugin::onLoad()
 			StatEventWrapper statEvent = StatEventWrapper(pStruct->StatEvent);
 			if (statEvent.GetEventName().find("Goal")) playback_in_progress = true;
 
+			// statEvent.getScore()
+
 			json data;
 			data["topic"] = "statistic";
 			data["message"]["event_name"] = statEvent.GetEventName();
@@ -33,6 +35,9 @@ void DSCSPlugin::onLoad()
 
 			webSocket.send(data.dump());
 		});
+
+	// TODO: When a player car join the game
+	// TODO: When a player car left the game
 
 	/*gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.VehiclePickup_Boost_TA.Pickup",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
@@ -64,17 +69,33 @@ void DSCSPlugin::onLoad()
 			webSocket.send("Car boost");
 		});*/
 
-	/*gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated",
+	gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!game_in_progress || !this->CheckValidGame()) return;
-			webSocket.send("Normal time updated");
-		});*/
 
-	/*gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated",
+			ServerWrapper server = gameWrapper->GetCurrentGameState();
+			if (server.IsNull()) return;
+
+			json data;
+			data["topic"] = "game_time";
+			data["message"] = server.GetGameTime();
+
+			webSocket.send(data.dump());
+		});
+
+	gameWrapper->HookEventWithCaller<ServerWrapper>("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!game_in_progress || !this->CheckValidGame()) return;
-			webSocket.send("Overtime time updated");
-		});*/
+
+			ServerWrapper server = gameWrapper->GetCurrentGameState();
+			if (server.IsNull()) return;
+
+			json data;
+			data["topic"] = "game_time";
+			data["message"] = server.GetGameTime();
+
+			webSocket.send(data.dump());
+		});
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_TA.Countdown.BeginState",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
@@ -133,7 +154,7 @@ void DSCSPlugin::onLoad()
 			webSocket.send(data.dump());
 		});
 
-	/*gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_TA.Countdown.BeginState",
+	gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_TA.Countdown.BeginState",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
 			if (!this->CheckValidGame()) return;
 			game_in_progress = true;
@@ -144,7 +165,7 @@ void DSCSPlugin::onLoad()
 			data["topic"] = "overtime_start";
 
 			webSocket.send(data.dump());
-		});*/
+		});
 
 	gameWrapper->HookEventWithCaller<ServerWrapper>("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState",
 		[this](ServerWrapper caller, void* params, std::string eventname) {
