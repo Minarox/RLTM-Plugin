@@ -21,15 +21,7 @@ void DSCSPlugin::onLoad()
 			PriWrapper receiver = PriWrapper(pStruct->Receiver);
 			StatEventWrapper statEvent = StatEventWrapper(pStruct->StatEvent);
 			
-			if (statEvent.GetEventName().find("Goal"))
-			{
-				playback_in_progress = true;
-				json data;
-				data["topic"] = "goal";
-				data["message"] = receiver.GetTeamNum();
-
-				webSocket.send(data.dump());
-			}
+			if (statEvent.GetEventName() == "Goal") playback_in_progress = true;
 
 			json data;
 			data["topic"] = "statistic";
