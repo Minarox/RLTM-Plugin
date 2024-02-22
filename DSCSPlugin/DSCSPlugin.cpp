@@ -20,9 +20,16 @@ void DSCSPlugin::onLoad()
 			StatTickerParams* pStruct = (StatTickerParams*)params;
 			PriWrapper receiver = PriWrapper(pStruct->Receiver);
 			StatEventWrapper statEvent = StatEventWrapper(pStruct->StatEvent);
-			if (statEvent.GetEventName().find("Goal")) playback_in_progress = true;
+			
+			if (statEvent.GetEventName().find("Goal"))
+			{
+				playback_in_progress = true;
+				json data;
+				data["topic"] = "goal";
+				data["message"] = receiver.GetTeamNum();
 
-			// statEvent.getScore()
+				webSocket.send(data.dump());
+			}
 
 			json data;
 			data["topic"] = "statistic";
@@ -103,7 +110,7 @@ void DSCSPlugin::onLoad()
 			total_game_time += 1;
 
 			json data;
-			data["topic"] = "game_time";
+			data["topic"] = "time";
 			data["message"]["overtime"] = overtime_in_progress;
 			data["message"]["time"] = game_time;
 
