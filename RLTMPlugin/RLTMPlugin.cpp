@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "RLTMPlugin.h"
 
-BAKKESMOD_PLUGIN(RLTMPlugin, "DawaEsport Championship Plugin", "1.0", PLUGINTYPE_SPECTATOR)
+BAKKESMOD_PLUGIN(RLTMPlugin, "Rocket League Tournament Manager Plugin", "1.0", PLUGINTYPE_SPECTATOR)
 
 /*
 	--- Public ---
