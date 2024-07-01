@@ -1,12 +1,20 @@
 #pragma once
-#pragma comment( lib, "pluginsdk.lib" )
+#pragma comment (lib, "pluginsdk.lib")
+#pragma comment (lib, "ws2_32.lib")
+#pragma comment (lib, "crypt32.lib")
 
 #include "bakkesmod/plugin/bakkesmodplugin.h"
-#include <sio_client.h>
-#include <fstream>
+#include <ixwebsocket/IXNetSystem.h>
+#include <ixwebsocket/IXWebSocket.h>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
+
+struct StatTickerParams {
+    uintptr_t Receiver;
+    uintptr_t Victim;
+    uintptr_t StatEvent;
+};
 
 class DSCSPlugin : public BakkesMod::Plugin::BakkesModPlugin
 {
@@ -14,27 +22,19 @@ public:
 	virtual void onLoad();
 	virtual void onUnload();
 
-	void JoinSpectator();
+private:
+	ix::WebSocket webSocket;
+	bool game_in_progress = false;
+	bool overtime_in_progress = false;
+	bool playback_in_progress = false;
+	int game_time = 0;
+	int total_game_time = 0;
+
+	void LoadWebSocket();
 	void SetSpectatorUI(int sleep);
 	void RemoveStatGraph();
-	void FetchStats();
-	void FetchPlayers();
 	void SetReplayAutoSave(bool status);
-	void ReadyUp();
-
-private:
-	sio::client socket;
-	std::time_t match_started_at = std::time(0);
-	std::time_t match_ended_at = std::time(0);
-	bool matchStatus = false;
-	bool playbackStatus = false;
-	bool highlightStatus = false;
-
-	bool IsGameValid();
-	void UpdateMatchStatus(bool status);
-	void UpdatePlaybackStatus(bool status);
-	void UpdateHighlightStatus(bool status);
-	void ResetStatus();
+	void SetReady();
+	bool CheckValidGame();
 	void Log(std::string message);
 };
-
