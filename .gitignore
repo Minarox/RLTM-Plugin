@@ -1,2 +1,6 @@
 .vs
-x64
+.idea
+.DS_Store
+
+RLTMPlugin/x64
+RLTMPlugin/Release
