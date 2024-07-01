@@ -1,12 +1,12 @@
 #include "pch.h"
-#include "DSCSPlugin.h"
+#include "RLTMPlugin.h"
 
-BAKKESMOD_PLUGIN(DSCSPlugin, "DawaEsport Championship Plugin", "1.0", PLUGINTYPE_SPECTATOR)
+BAKKESMOD_PLUGIN(RLTMPlugin, "DawaEsport Championship Plugin", "1.0", PLUGINTYPE_SPECTATOR)
 
 /*
 	--- Public ---
 */
-void DSCSPlugin::onLoad()
+void RLTMPlugin::onLoad()
 {
 	cvarManager->executeCommand("plugin unload rocketstats; sleep 100; plugin unload autoreplayuploader; sleep 100; plugin unload rankviewer; sleep 100;", false);
 
@@ -250,14 +250,14 @@ void DSCSPlugin::onLoad()
 		});
 
 	// Événements HUD
-	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx", std::bind(&DSCSPlugin::SetSpectatorUI, this, 100));
-	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", std::bind(&DSCSPlugin::SetSpectatorUI, this, 0));
-	gameWrapper->HookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs", std::bind(&DSCSPlugin::RemoveStatGraph, this));
+	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx", std::bind(&RLTMPlugin::SetSpectatorUI, this, 100));
+	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", std::bind(&RLTMPlugin::SetSpectatorUI, this, 0));
+	gameWrapper->HookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs", std::bind(&RLTMPlugin::RemoveStatGraph, this));
 
-	this->Log("--- DSCSPlugin loaded ---");
+	this->Log("--- RLTMPlugin loaded ---");
 }
 
-void DSCSPlugin::onUnload()
+void RLTMPlugin::onUnload()
 {
 	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatTickerMessage");
 	//gameWrapper->UnhookEventPost("Function TAGame.Car_TA.OnSuperSonicChanged");
@@ -282,13 +282,13 @@ void DSCSPlugin::onUnload()
 
 	webSocket.stop();
 	ix::uninitNetSystem();
-	this->Log("--- DSCSPlugin unloaded ---");
+	this->Log("--- RLTMPlugin unloaded ---");
 }
 
 /*
 	--- Private ---
 */
-void DSCSPlugin::LoadWebSocket()
+void RLTMPlugin::LoadWebSocket()
 {
 	webSocket.setUrl("ws://localhost:9001/game");
 
@@ -316,7 +316,7 @@ void DSCSPlugin::LoadWebSocket()
 	);
 }
 
-void DSCSPlugin::SetSpectatorUI(int sleep)
+void RLTMPlugin::SetSpectatorUI(int sleep)
 {
 	if (!this->CheckValidGame()) return;
 	ServerWrapper server = gameWrapper->GetCurrentGameState();
@@ -328,7 +328,7 @@ void DSCSPlugin::SetSpectatorUI(int sleep)
 		cvarManager->executeCommand("sleep " + std::to_string(sleep) + "; replay_gui hud 1; replay_gui names 1; replay_gui matchinfo 1; sleep 16; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
 }
 
-void DSCSPlugin::RemoveStatGraph()
+void RLTMPlugin::RemoveStatGraph()
 {
 	EngineTAWrapper engine = gameWrapper->GetEngine();
 	if (engine.IsNull()) return;
@@ -337,12 +337,12 @@ void DSCSPlugin::RemoveStatGraph()
 	if (!statGraphs.IsNull()) statGraphs.SetGraphLevel(6);
 }
 
-void DSCSPlugin::SetReplayAutoSave(bool status)
+void RLTMPlugin::SetReplayAutoSave(bool status)
 {
 	cvarManager->executeCommand("ranked_autosavereplay_all " + std::to_string(status ? 1 : 0), false);
 }
 
-void DSCSPlugin::SetReady()
+void RLTMPlugin::SetReady()
 {
 	ServerWrapper server = gameWrapper->GetOnlineGame();
 
@@ -354,7 +354,7 @@ void DSCSPlugin::SetReady()
 	player.ServerReadyUp();
 }
 
-bool DSCSPlugin::CheckValidGame()
+bool RLTMPlugin::CheckValidGame()
 {
 	ServerWrapper sw = gameWrapper->GetCurrentGameState();
 	if (!sw) return false;
@@ -365,7 +365,7 @@ bool DSCSPlugin::CheckValidGame()
 	return playlistID == 6;
 }
 
-void DSCSPlugin::Log(std::string message)
+void RLTMPlugin::Log(std::string message)
 {
 	cvarManager->log(message);
 }

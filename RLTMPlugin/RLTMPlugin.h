@@ -16,7 +16,7 @@ struct StatTickerParams {
     uintptr_t StatEvent;
 };
 
-class DSCSPlugin : public BakkesMod::Plugin::BakkesModPlugin
+class RLTMPlugin : public BakkesMod::Plugin::BakkesModPlugin
 {
 public:
 	virtual void onLoad();
