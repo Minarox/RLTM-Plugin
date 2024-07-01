@@ -1,10 +1,10 @@
-﻿  DSCSPlugin.cpp
-     Creating library C:\Users\mathi\source\repos\DSCSPlugin\x64\Release\DSCSPlugin.lib and object C:\Users\mathi\source\repos\DSCSPlugin\x64\Release\DSCSPlugin.exp
+﻿  RLTMPlugin.cpp
+     Creating library C:\Users\mathi\source\repos\RLTMPlugin\x64\Release\RLTMPlugin.lib and object C:\Users\mathi\source\repos\RLTMPlugin\x64\Release\RLTMPlugin.exp
   Generating code
   15 of 1186 functions ( 1.3%) were compiled, the rest were copied from previous compilation.
     3 functions were new in current compilation
     13 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  DSCSPlugin.vcxproj -> C:\Users\mathi\source\repos\DSCSPlugin\x64\Release\DSCSPlugin.dll
+  RLTMPlugin.vcxproj -> C:\Users\mathi\source\repos\RLTMPlugin\x64\Release\RLTMPlugin.dll
   'pwsh.exe' n'est pas reconnu en tant que commande interne
   ou externe, un programme exécutable ou un fichier de commandes.
