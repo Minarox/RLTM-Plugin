@@ -14,7 +14,7 @@
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 
-class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*//*, public BakkesMod::Plugin::PluginWindow*/
+class RLTM: public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow/*, public BakkesMod::Plugin::PluginWindow*/
 {
 
 	//std::shared_ptr<bool> enabled;
@@ -22,6 +22,15 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	//Boilerplate
 	virtual void onLoad();
 	virtual void onUnload();
+
+	//Hooks
+	bool hooked;
+	void HookEvents();
+	void UnhookEvents();
+
+	//WebSocket
+	ix::WebSocket socket;
+	void InitSocket();
 
 	// Inherited via PluginSettingsWindow
 	/*
