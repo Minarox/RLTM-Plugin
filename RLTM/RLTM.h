@@ -13,48 +13,34 @@
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
+using json = nlohmann::json;
 
-class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*//*, public BakkesMod::Plugin::PluginWindow*/
+class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
-
-	//std::shared_ptr<bool> enabled;
-
-	//Boilerplate
+public:
+	// Boilerplate
 	virtual void onLoad();
 	virtual void onUnload();
 
-	//Hooks
+	// Hooks
 	bool hooked;
 	void HookEvents();
 	void UnhookEvents();
 
-	//WebSocket
+	// WebSocket
 	ix::WebSocket socket;
 	void InitSocket();
 
-	// Inherited via PluginSettingsWindow
-	/*
+	//std::shared_ptr<bool> enabled;
+
+	/* Inherited via PluginSettingsWindow
 	void RenderSettings() override;
 	std::string GetPluginName() override;
 	void SetImGuiContext(uintptr_t ctx) override;
 	*/
 
-	// Inherited via PluginWindow
-	/*
-
-	bool isWindowOpen_ = false;
-	bool isMinimized_ = false;
-	std::string menuTitle_ = "RLTM";
-
-	virtual void Render() override;
-	virtual std::string GetMenuName() override;
-	virtual std::string GetMenuTitle() override;
-	virtual void SetImGuiContext(uintptr_t ctx) override;
-	virtual bool ShouldBlockInput() override;
-	virtual bool IsActiveOverlay() override;
-	virtual void OnOpen() override;
-	virtual void OnClose() override;
-	
-	*/
+private:
+	void SendSocketMessage(std::string topic, json message);
+	void FetchGameTime();
 };
 
