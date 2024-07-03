@@ -2,7 +2,7 @@
 #include "RLTM.h"
 
 
-BAKKESMOD_PLUGIN(RLTM, "Rocket League Tournament Manager plugin for BakkesMod", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(RLTM, "Rocket League Tournament Manager plugin for BakkesMod", plugin_version, PLUGINTYPE_SPECTATOR)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
