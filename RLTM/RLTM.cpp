@@ -6,13 +6,16 @@ BAKKESMOD_PLUGIN(RLTM, "Rocket League Tournament Manager plugin for BakkesMod", 
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
+/*
+	Public
+*/
 void RLTM::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
 	ix::initNetSystem();
-	HookEvents();
-	InitSocket();
+	this->HookEvents();
+	this->InitSocket();
 
 	cvarManager->log("RLTM Plugin loaded");
 
@@ -51,7 +54,7 @@ void RLTM::onLoad()
 void RLTM::onUnload()
 {
 	socket.stop();
-	UnhookEvents();
+	this->UnhookEvents();
 	ix::uninitNetSystem();
 
 	cvarManager->log("RLTM Plugin unloaded");
@@ -61,21 +64,21 @@ void RLTM::HookEvents()
 {
 	if (hooked) return;
 
-	//gameWrapper->HookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::YourPluginMethod, this);
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", std::bind(&RLTM::FetchGameTime, this);
 
 	hooked = true;
 }
 
 void RLTM::UnhookEvents()
 {
-	//gameWrapper->UnhookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::YourPluginMethod, this);
+	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated");
 
 	hooked = false;
 }
 
 void RLTM::InitSocket()
 {
-	//if (socket.getReadyState() !== ReadyState::Closed) return;
+	if (socket.getReadyState() != ReadyState::Closed) return;
 
 	socket.setUrl("ws://localhost:3000/");
 	socket.setHandshakeTimeout(4);
@@ -91,16 +94,52 @@ void RLTM::InitSocket()
 		case ix::WebSocketMessageType::Open:
 			cvarManager->log("Socket connected");
 			break;
+
 		case ix::WebSocketMessageType::Message:
 			cvarManager->log("Socket message: " + msg->str);
 			break;
+
 		case ix::WebSocketMessageType::Error:
 			cvarManager->log("Socket errro: " + msg->errorInfo.reason);
 			break;
+
 		case ix::WebSocketMessageType::Close:
 			cvarManager->log("Socket disconnected");
 			break;
 		}
 	});
 	socket.start();
+}
+
+void RLTM::SendSocketMessage(std::string topic, json message)
+{
+	if (socket.getReadyState() != ReadyState::Open) return;
+
+	json data;
+	data["topic"] = topic;
+	data["message"] = message;
+
+	socket.send(data.dump());
+}
+
+/*
+	Private
+*/
+void RLTM::FetchGameTime()
+{
+	ServerWrapper localServer = gameWrapper->GetGameEventAsServer();
+	ServerWrapper onlineServer = gameWrapper->GetOnlineGame();
+
+	int gameTime = 0;
+
+	if (gameWrapper->IsInGame() && gameWrapper->IsInOnlineGame() && !onlineServer.IsNull())
+		gameTime = onlineServer.GetSecondsRemaining();
+	else if (!localServer.IsNull())
+		gameTime = localServer.GetSecondsRemaining();
+
+	json message;
+	message["value"] = gameTime;
+	message["overtime"] = false;
+
+	socket.send("time", message);
 }
