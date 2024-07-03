@@ -9,7 +9,12 @@ std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 void RLTM::onLoad()
 {
 	_globalCvarManager = cvarManager;
-	//cvarManager->log("Plugin loaded!");
+
+	ix::initNetSystem();
+	HookEvents();
+	initSocket();
+
+	cvarManager->log("RLTM Plugin loaded");
 
 	//cvarManager->registerNotifier("my_aweseome_notifier", [&](std::vector<std::string> args) {
 	//	cvarManager->log("Hello notifier!");
@@ -45,4 +50,57 @@ void RLTM::onLoad()
 
 void RLTM::onUnload()
 {
+	socket.stop();
+	UnhookEvents();
+	ix::uninitNetSystem();
+
+	cvarManager->log("RLTM Plugin unloaded");
+}
+
+void RLTM::HookEvents()
+{
+	if (hooked) return;
+
+	//gameWrapper->HookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::YourPluginMethod, this);
+
+	hooked = true;
+}
+
+void RLTM::UnhookEvents()
+{
+	//gameWrapper->UnhookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::YourPluginMethod, this);
+
+	hooked = false;
+}
+
+void RLTM::InitSocket()
+{
+	if (socket.getReadyState() !== ReadyState::Closed) return;
+
+	socket.setUrl("ws://localhost:3000/");
+	socket.setHandshakeTimeout(4);
+	socket.setPingInterval(45);
+	socket.enableAutomaticReconnection();
+	socket.setMinWaitBetweenReconnectionRetries(1000);
+	socket.setMaxWaitBetweenReconnectionRetries(5000);
+
+	socket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg)
+	{
+		switch (msg->type)
+		{
+		case ix::WebSocketMessageType::Open:
+			cvarManager->log("Socket connected");
+			break;
+		case ix::WebSocketMessageType::Message:
+			cvarManager->log("Socket message: " + msg->str);
+			break;
+		case ix::WebSocketMessageType::Error:
+			cvarManager->log("Socket errro: " + msg->errorInfo.reason);
+			break;
+		case ix::WebSocketMessageType::Close:
+			cvarManager->log("Socket disconnected");
+			break;
+		}
+	});
+	socket.start();
 }
