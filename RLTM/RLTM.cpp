@@ -12,7 +12,7 @@ void RLTM::onLoad()
 
 	ix::initNetSystem();
 	HookEvents();
-	initSocket();
+	InitSocket();
 
 	cvarManager->log("RLTM Plugin loaded");
 
@@ -75,7 +75,7 @@ void RLTM::UnhookEvents()
 
 void RLTM::InitSocket()
 {
-	if (socket.getReadyState() !== ReadyState::Closed) return;
+	//if (socket.getReadyState() !== ReadyState::Closed) return;
 
 	socket.setUrl("ws://localhost:3000/");
 	socket.setHandshakeTimeout(4);

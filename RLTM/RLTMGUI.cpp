@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "RLTM.h"
 
+/*
 std::string RLTM::GetPluginName() {
 	return "RLTM";
 }
@@ -15,6 +16,7 @@ void RLTM::SetImGuiContext(uintptr_t ctx) {
 void RLTM::RenderSettings() {
 	ImGui::TextUnformatted("RLTM plugin settings");
 }
+*/
 
 /*
 // Do ImGui rendering here
