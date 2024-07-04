@@ -14,10 +14,10 @@ void RLTM::onLoad()
 	_globalCvarManager = cvarManager;
 
 	ix::initNetSystem();
-	this->HookEvents();
-	this->InitSocket();
+	HookEvents();
+	InitSocket();
 
-	cvarManager->log("RLTM Plugin loaded");
+	Log("RLTM Plugin loaded");
 
 	//cvarManager->registerNotifier("my_aweseome_notifier", [&](std::vector<std::string> args) {
 	//	cvarManager->log("Hello notifier!");
@@ -54,33 +54,45 @@ void RLTM::onLoad()
 void RLTM::onUnload()
 {
 	socket.stop();
-	this->UnhookEvents();
+	UnhookEvents();
 	ix::uninitNetSystem();
 
-	cvarManager->log("RLTM Plugin unloaded");
+	Log("RLTM Plugin unloaded");
 }
 
 void RLTM::HookEvents()
 {
 	if (hooked) return;
 
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", std::bind(&RLTM::FetchGameTime, this);
+	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", std::bind(&RLTM::FetchGameData, this, 0));
+	gameWrapper->HookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::FetchGameData, this, 0));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", std::bind(&RLTM::FetchGameData, this, 0));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated", std::bind(&RLTM::FetchGameData, this, 0));
+	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", std::bind(&RLTM::FetchGameData, this, 1));
+	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", std::bind(&RLTM::FetchGameData, this, 0));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&RLTM::FetchGameData, this, 0));
 
 	hooked = true;
 }
 
 void RLTM::UnhookEvents()
 {
+	gameWrapper->UnhookEvent("Function GameEvent_TA.Countdown.BeginState");
+	gameWrapper->UnhookEvent("Function TAGame.Ball_TA.Explode");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated");
+	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated");
+	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState");
+	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState");
+	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed");
 
 	hooked = false;
 }
 
 void RLTM::InitSocket()
 {
-	if (socket.getReadyState() != ReadyState::Closed) return;
+	if (socket.getReadyState() != ix::ReadyState::Closed) return;
 
-	socket.setUrl("ws://localhost:3000/");
+	socket.setUrl("ws://localhost:3000/?token=1234");
 	socket.setHandshakeTimeout(4);
 	socket.setPingInterval(45);
 	socket.enableAutomaticReconnection();
@@ -92,19 +104,19 @@ void RLTM::InitSocket()
 		switch (msg->type)
 		{
 		case ix::WebSocketMessageType::Open:
-			cvarManager->log("Socket connected");
+			Log("Socket connected");
 			break;
 
 		case ix::WebSocketMessageType::Message:
-			cvarManager->log("Socket message: " + msg->str);
+			Log("Socket message: " + msg->str);
 			break;
 
 		case ix::WebSocketMessageType::Error:
-			cvarManager->log("Socket errro: " + msg->errorInfo.reason);
+			Log("Socket error: " + msg->errorInfo.reason);
 			break;
 
 		case ix::WebSocketMessageType::Close:
-			cvarManager->log("Socket disconnected");
+			Log("Socket disconnected");
 			break;
 		}
 	});
@@ -113,7 +125,7 @@ void RLTM::InitSocket()
 
 void RLTM::SendSocketMessage(std::string topic, json message)
 {
-	if (socket.getReadyState() != ReadyState::Open) return;
+	if (socket.getReadyState() != ix::ReadyState::Open) return;
 
 	json data;
 	data["topic"] = topic;
@@ -122,24 +134,51 @@ void RLTM::SendSocketMessage(std::string topic, json message)
 	socket.send(data.dump());
 }
 
+void RLTM::Log(std::string message)
+{
+	cvarManager->log(message);
+}
+
+
 /*
 	Private
 */
-void RLTM::FetchGameTime()
+void RLTM::FetchGameData(int isReplayingGoad)
 {
 	ServerWrapper localServer = gameWrapper->GetGameEventAsServer();
 	ServerWrapper onlineServer = gameWrapper->GetOnlineGame();
 
-	int gameTime = 0;
-
-	if (gameWrapper->IsInGame() && gameWrapper->IsInOnlineGame() && !onlineServer.IsNull())
-		gameTime = onlineServer.GetSecondsRemaining();
-	else if (!localServer.IsNull())
-		gameTime = localServer.GetSecondsRemaining();
-
 	json message;
-	message["value"] = gameTime;
-	message["overtime"] = false;
 
-	socket.send("time", message);
+	if (!onlineServer.IsNull())
+	{
+		message["value"] = onlineServer.GetSecondsRemaining();
+		message["score"] = GetGameScore(onlineServer);
+		message["isOvertime"] = onlineServer.GetbOverTime();
+		message["isReplay"] = isReplayingGoad;
+	}
+	else if (!localServer.IsNull())
+	{
+		message["value"] = localServer.GetSecondsRemaining();
+		message["score"] = GetGameScore(localServer);
+		message["isOvertime"] = localServer.GetbOverTime();
+		message["isReplay"] = isReplayingGoad;
+	}
+
+	SendSocketMessage("game", message);
+}
+
+std::array<int, 2> RLTM::GetGameScore(ServerWrapper server)
+{
+	PlayerControllerWrapper serverLocalPrimaryPlayer = server.GetLocalPrimaryPlayer();
+	ArrayWrapper<TeamWrapper> serverTeams = server.GetTeams();
+
+	if (serverTeams.IsNull()) return { 0, 0 };
+
+	if (!serverLocalPrimaryPlayer.IsNull())
+		for (TeamWrapper team : serverTeams)
+			if (serverLocalPrimaryPlayer.GetTeamNum2() != team.GetTeamNum2())
+				return { serverTeams.Get(0).GetScore(), serverTeams.Get(1).GetScore() };
+
+	return { serverTeams.Get(1).GetScore(), serverTeams.Get(0).GetScore() };
 }

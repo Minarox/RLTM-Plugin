@@ -31,6 +31,9 @@ public:
 	ix::WebSocket socket;
 	void InitSocket();
 
+	// Logs
+	void Log(std::string message);
+
 	//std::shared_ptr<bool> enabled;
 
 	/* Inherited via PluginSettingsWindow
@@ -41,6 +44,7 @@ public:
 
 private:
 	void SendSocketMessage(std::string topic, json message);
-	void FetchGameTime();
+	void FetchGameData(int isReplayingGoad);
+	std::array<int, 2> GetGameScore(ServerWrapper server);
 };
 
