@@ -22,19 +22,22 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	virtual void onUnload();
 
 	// Hooks
-	bool isHooked;
+	bool isHooked = false;
 	void HookEvents();
 	void UnhookEvents();
 
 	// WebSocket
 	ix::WebSocket socket;
+	json oldData;
 	void InitSocket();
-	void SendSocketMessage(std::string topic, json message = NULL);
+	void SendSocketMessage(std::string topic, json message);
 
 	// Game datas
+	int isPlayingReplay = 0;
 	ServerWrapper GetServerWrapper();
-	void FetchGameData(int isReplayingGoal);
+	void FetchGameData();
 	std::array<int, 2> GetGameScore(ServerWrapper server);
+	void SetReplayState(int value);
 
 	// Game HUD
 	void SetSpectatorUI(int sleep);
