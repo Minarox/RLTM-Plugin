@@ -103,13 +103,13 @@ void RLTM::InitSocket()
 	socket.start();
 }
 
-void RLTM::SendSocketMessage(std::string topic, json message)
+void RLTM::SendSocketMessage(std::string topic, json message = null)
 {
 	if (socket.getReadyState() != ix::ReadyState::Open) return;
 
 	json data;
 	data["topic"] = topic;
-	data["message"] = message;
+	data["payload"] = message;
 
 	socket.send(data.dump());
 }
