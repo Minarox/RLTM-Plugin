@@ -33,14 +33,11 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 
 	// Game datas
 	ServerWrapper GetServerWrapper();
-	void FetchGameData(int isReplayingGoad);
+	void FetchGameData(int isReplayingGoal);
 	std::array<int, 2> GetGameScore(ServerWrapper server);
 
 	// Game HUD
 	void SetSpectatorUI(int sleep);
 	void RemoveStatGraph();
-
-	// Logs
-	void Log(std::string message);
 };
 

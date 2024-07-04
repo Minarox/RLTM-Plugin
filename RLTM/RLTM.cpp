@@ -14,7 +14,7 @@ void RLTM::onLoad()
 	HookEvents();
 	InitSocket();
 
-	Log("RLTM Plugin loaded");
+	cvarManager->log("RLTM Plugin loaded");
 }
 
 void RLTM::onUnload()
@@ -23,7 +23,7 @@ void RLTM::onUnload()
 	UnhookEvents();
 	ix::uninitNetSystem();
 
-	Log("RLTM Plugin unloaded");
+	cvarManager->log("RLTM Plugin unloaded");
 }
 
 void RLTM::HookEvents()
@@ -78,19 +78,19 @@ void RLTM::InitSocket()
 		switch (msg->type)
 		{
 		case ix::WebSocketMessageType::Open:
-			Log("Socket connected");
+			cvarManager->log("Socket connected");
 			break;
 
 		case ix::WebSocketMessageType::Message:
-			Log("Socket message: " + msg->str);
+			cvarManager->log("Socket message: " + msg->str);
 			break;
 
 		case ix::WebSocketMessageType::Error:
-			Log("Socket error: " + msg->errorInfo.reason);
+			cvarManager->log("Socket error: " + msg->errorInfo.reason);
 			break;
 
 		case ix::WebSocketMessageType::Close:
-			Log("Socket disconnected");
+			cvarManager->log("Socket disconnected");
 			break;
 		}
 	});
@@ -118,7 +118,7 @@ ServerWrapper RLTM::GetServerWrapper()
 	return null;
 }
 
-void RLTM::FetchGameData(int isReplayingGoad)
+void RLTM::FetchGameData(int isReplayingGoal)
 {
 	ServerWrapper server = GetServerWrapper();
 
@@ -129,7 +129,7 @@ void RLTM::FetchGameData(int isReplayingGoad)
 		message["value"] = server.GetSecondsRemaining();
 		message["score"] = GetGameScore(server);
 		message["isOvertime"] = server.GetbOverTime();
-		message["isReplay"] = isReplayingGoad;
+		message["isReplay"] = isReplayingGoal;
 	}
 
 	SendSocketMessage("game", message);
@@ -137,17 +137,17 @@ void RLTM::FetchGameData(int isReplayingGoad)
 
 std::array<int, 2> RLTM::GetGameScore(ServerWrapper server)
 {
-	PlayerControllerWrapper serverLocalPrimaryPlayer = server.GetLocalPrimaryPlayer();
-	ArrayWrapper<TeamWrapper> serverTeams = server.GetTeams();
+	PlayerControllerWrapper primaryPlayer = server.GetLocalPrimaryPlayer();
+	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
 
-	if (serverTeams.IsNull()) return { 0, 0 };
+	if (teams.IsNull()) return { 0, 0 };
 
-	if (!serverLocalPrimaryPlayer.IsNull())
-		for (TeamWrapper team : serverTeams)
-			if (serverLocalPrimaryPlayer.GetTeamNum2() != team.GetTeamNum2())
-				return { serverTeams.Get(0).GetScore(), serverTeams.Get(1).GetScore() };
+	if (!primaryPlayer.IsNull())
+		for (TeamWrapper team : teams)
+			if (primaryPlayer.GetTeamNum2() != team.GetTeamNum2())
+				return { teams.Get(0).GetScore(), teams.Get(1).GetScore() };
 
-	return { serverTeams.Get(1).GetScore(), serverTeams.Get(0).GetScore() };
+	return { teams.Get(1).GetScore(), teams.Get(0).GetScore() };
 }
 
 void RLTM::SetSpectatorUI(int sleep)
@@ -156,13 +156,26 @@ void RLTM::SetSpectatorUI(int sleep)
 
 	if (!server.IsNull())
 	{
-		PlayerControllerWrapper serverLocalPrimaryPlayer = server.GetLocalPrimaryPlayer();
-		if (serverLocalPrimaryPlayer.isNull()) return;
+		PlayerControllerWrapper primaryPlayer = server.GetLocalPrimaryPlayer();
+		if (primaryPlayer.isNull()) return;
 
-		PriWrapper serverLocalPrimaryPlayerPRI = serverLocalPrimaryPlayer.GetPRI();
-		if (!serverLocalPrimaryPlayerPRI.isNull() && serverLocalPrimaryPlayerPRI.IsSpectator())
+		PriWrapper player = primaryPlayer.GetPRI();
+		if (!player.isNull() && player.IsSpectator())
 			cvarManager->executeCommand("sleep " + std::to_string(sleep) + "; replay_gui hud 1; replay_gui names 1; replay_gui matchinfo 1; sleep 16; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
 	}
+}
+
+void RLTM::SetReady()
+{
+	ServerWrapper server = GetServerWrapper();
+	if (server.isNull()) return;
+
+	PlayerControllerWrapper playerController = gameWrapper->GetPlayerController();
+	if (playerController.IsNull()) return;
+
+	PriWrapper player = playerController.GetPRI();
+	if (!player.IsNull()) player.ServerReadyUp();
+	
 }
 
 void RLTM::RemoveStatGraph()
@@ -172,9 +185,4 @@ void RLTM::RemoveStatGraph()
 
 	StatGraphSystemWrapper statGraphs = engine.GetStatGraphs();
 	if (!statGraphs.IsNull()) statGraphs.SetGraphLevel(6);
-}
-
-void RLTM::Log(std::string message)
-{
-	cvarManager->log(message);
 }
