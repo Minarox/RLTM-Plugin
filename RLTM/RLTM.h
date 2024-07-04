@@ -29,10 +29,9 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	// WebSocket
 	ix::WebSocket socket;
 	void InitSocket();
-	void SendSocketMessage(std::string topic, json message);
+	void SendSocketMessage(std::string topic, json message = NULL);
 
 	// Game datas
-	bool isValidGame;
 	ServerWrapper GetServerWrapper();
 	void FetchGameData(int isReplayingGoal);
 	std::array<int, 2> GetGameScore(ServerWrapper server);
@@ -40,6 +39,6 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	// Game HUD
 	void SetSpectatorUI(int sleep);
 	void RemoveStatGraph();
-	void SetReady()
+	void SetReady();
 };
 

@@ -30,13 +30,13 @@ void RLTM::HookEvents()
 {
 	if (isHooked) return;
 
-	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", std::bind(&RLTM::FetchGameData, this, 0));
-	gameWrapper->HookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::FetchGameData, this, 0));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", std::bind(&RLTM::FetchGameData, this, 0));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated", std::bind(&RLTM::FetchGameData, this, 0));
-	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", std::bind(&RLTM::FetchGameData, this, 1));
-	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", std::bind(&RLTM::FetchGameData, this, 0));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&RLTM::FetchGameData, this, 0));
+	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", std::bind(&RLTM::FetchGameData, this));
+	gameWrapper->HookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::FetchGameData, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", std::bind(&RLTM::FetchGameData, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated", std::bind(&RLTM::FetchGameData, this));
+	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", std::bind(&RLTM::FetchGameData, this));
+	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", std::bind(&RLTM::FetchGameData, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&RLTM::FetchGameData, this));
 
 	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx", std::bind(&RLTM::SetSpectatorUI, this, 100));
 	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", std::bind(&RLTM::SetSpectatorUI, this, 0));
@@ -103,7 +103,7 @@ void RLTM::InitSocket()
 	socket.start();
 }
 
-void RLTM::SendSocketMessage(std::string topic, json message = null)
+void RLTM::SendSocketMessage(std::string topic, json message = NULL)
 {
 	if (socket.getReadyState() != ix::ReadyState::Open) return;
 
@@ -119,38 +119,30 @@ ServerWrapper RLTM::GetServerWrapper()
 	ServerWrapper onlineServer = gameWrapper->GetOnlineGame();
 	ServerWrapper localServer = gameWrapper->GetGameEventAsServer();
 
-	isValidGame = true;
-
 	if (!onlineServer.IsNull())
 	{
-		GameSettingPlaylistWrapper playlist = sw.GetPlaylist();
-		if (!playlist.isNull())
+		GameSettingPlaylistWrapper playlist = onlineServer.GetPlaylist();
+		if (!playlist.IsNull())
 		{
 			int playlistID = playlist.GetPlaylistId();
-			if (playlistID != 6) isValidGame = false;
+			if (playlistID == 6) return onlineServer;
 		}
-		return onlineServer;
 	} 
 	if (!localServer.IsNull()) return localServer;
-
-	isValidGame = false;
 }
 
-void RLTM::FetchGameData(int isReplayingGoal)
+void RLTM::FetchGameData()
 {
 	ServerWrapper server = GetServerWrapper();
+	if (server.IsNull()) return;
 
 	json message;
+	message["value"] = server.GetSecondsRemaining();
+	message["score"] = GetGameScore(server);
+	message["isOvertime"] = server.GetbOverTime();
+	message["isReplay"] = server.GetbPlayReplays();
 
-	if (isValidGame && !server.IsNull())
-	{
-		message["value"] = server.GetSecondsRemaining();
-		message["score"] = GetGameScore(server);
-		message["isOvertime"] = server.GetbOverTime();
-		message["isReplay"] = isReplayingGoal;
-	}
-
-	if (isValidGame) SendSocketMessage("game", message);
+	SendSocketMessage("game", message);
 }
 
 std::array<int, 2> RLTM::GetGameScore(ServerWrapper server)
@@ -171,33 +163,32 @@ std::array<int, 2> RLTM::GetGameScore(ServerWrapper server)
 void RLTM::SetSpectatorUI(int sleep)
 {
 	ServerWrapper server = GetServerWrapper();
-	if (!isValidGame || server.isNull()) return;
+	if (server.IsNull()) return;
 
 	PlayerControllerWrapper primaryPlayer = server.GetLocalPrimaryPlayer();
-	if (primaryPlayer.isNull()) return;
+	if (primaryPlayer.IsNull()) return;
 
 	PriWrapper player = primaryPlayer.GetPRI();
-	if (!player.isNull() && player.IsSpectator())
+	if (!player.IsNull() && player.IsSpectator())
 		cvarManager->executeCommand("sleep " + std::to_string(sleep) + "; replay_gui hud 1; replay_gui names 1; replay_gui matchinfo 1; sleep 16; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
 }
 
 void RLTM::SetReady()
 {
 	ServerWrapper server = GetServerWrapper();
-	if (!isValidGame || server.isNull()) return;
+	if (server.IsNull()) return;
 
 	PlayerControllerWrapper playerController = gameWrapper->GetPlayerController();
 	if (playerController.IsNull()) return;
 
 	PriWrapper player = playerController.GetPRI();
 	if (!player.IsNull()) player.ServerReadyUp();
-	
 }
 
 void RLTM::RemoveStatGraph()
 {
 	ServerWrapper server = GetServerWrapper();
-	if (!isValidGame || server.isNull()) return;
+	if (server.IsNull()) return;
 
 	EngineTAWrapper engine = gameWrapper->GetEngine();
 	if (engine.IsNull()) return;
