@@ -17,7 +17,6 @@ using json = nlohmann::json;
 
 class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
-public:
 	// Boilerplate
 	virtual void onLoad();
 	virtual void onUnload();
@@ -30,21 +29,18 @@ public:
 	// WebSocket
 	ix::WebSocket socket;
 	void InitSocket();
+	void SendSocketMessage(std::string topic, json message);
+
+	// Game datas
+	ServerWrapper GetServerWrapper();
+	void FetchGameData(int isReplayingGoad);
+	std::array<int, 2> GetGameScore(ServerWrapper server);
+
+	// Game HUD
+	void SetSpectatorUI(int sleep);
+	void RemoveStatGraph();
 
 	// Logs
 	void Log(std::string message);
-
-	//std::shared_ptr<bool> enabled;
-
-	/* Inherited via PluginSettingsWindow
-	void RenderSettings() override;
-	std::string GetPluginName() override;
-	void SetImGuiContext(uintptr_t ctx) override;
-	*/
-
-private:
-	void SendSocketMessage(std::string topic, json message);
-	void FetchGameData(int isReplayingGoad);
-	std::array<int, 2> GetGameScore(ServerWrapper server);
 };
 

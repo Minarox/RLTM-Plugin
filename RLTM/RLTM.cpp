@@ -6,9 +6,6 @@ BAKKESMOD_PLUGIN(RLTM, "Rocket League Tournament Manager plugin for BakkesMod", 
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
-/*
-	Public
-*/
 void RLTM::onLoad()
 {
 	_globalCvarManager = cvarManager;
@@ -18,37 +15,6 @@ void RLTM::onLoad()
 	InitSocket();
 
 	Log("RLTM Plugin loaded");
-
-	//cvarManager->registerNotifier("my_aweseome_notifier", [&](std::vector<std::string> args) {
-	//	cvarManager->log("Hello notifier!");
-	//}, "", 0);
-
-	//auto cvar = cvarManager->registerCvar("template_cvar", "hello-cvar", "just a example of a cvar");
-	//auto cvar2 = cvarManager->registerCvar("template_cvar2", "0", "just a example of a cvar with more settings", true, true, -10, true, 10 );
-
-	//cvar.addOnValueChanged([this](std::string cvarName, CVarWrapper newCvar) {
-	//	cvarManager->log("the cvar with name: " + cvarName + " changed");
-	//	cvarManager->log("the new value is:" + newCvar.getStringValue());
-	//});
-
-	//cvar2.addOnValueChanged(std::bind(&RLTM::YourPluginMethod, this, _1, _2));
-
-	// enabled decleared in the header
-	//enabled = std::make_shared<bool>(false);
-	//cvarManager->registerCvar("TEMPLATE_Enabled", "0", "Enable the TEMPLATE plugin", true, true, 0, true, 1).bindTo(enabled);
-
-	//cvarManager->registerNotifier("NOTIFIER", [this](std::vector<std::string> params){FUNCTION();}, "DESCRIPTION", PERMISSION_ALL);
-	//cvarManager->registerCvar("CVAR", "DEFAULTVALUE", "DESCRIPTION", true, true, MINVAL, true, MAXVAL);//.bindTo(CVARVARIABLE);
-	//gameWrapper->HookEvent("FUNCTIONNAME", std::bind(&TEMPLATE::FUNCTION, this));
-	//gameWrapper->HookEventWithCallerPost<ActorWrapper>("FUNCTIONNAME", std::bind(&RLTM::FUNCTION, this, _1, _2, _3));
-	//gameWrapper->RegisterDrawable(bind(&TEMPLATE::Render, this, std::placeholders::_1));
-
-
-	//gameWrapper->HookEvent("Function TAGame.Ball_TA.Explode", [this](std::string eventName) {
-	//	cvarManager->log("Your hook got called and the ball went POOF");
-	//});
-	// You could also use std::bind here
-	//gameWrapper->HookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::YourPluginMethod, this);
 }
 
 void RLTM::onUnload()
@@ -72,6 +38,10 @@ void RLTM::HookEvents()
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", std::bind(&RLTM::FetchGameData, this, 0));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&RLTM::FetchGameData, this, 0));
 
+	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx", std::bind(&RLTM::SetSpectatorUI, this, 100));
+	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", std::bind(&RLTM::SetSpectatorUI, this, 0));
+	gameWrapper->HookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs", std::bind(&RLTM::RemoveStatGraph, this));
+
 	hooked = true;
 }
 
@@ -84,6 +54,10 @@ void RLTM::UnhookEvents()
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState");
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed");
+
+	gameWrapper->UnhookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx");
+	gameWrapper->UnhookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD");
+	gameWrapper->UnhookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs");
 
 	hooked = false;
 }
@@ -134,34 +108,27 @@ void RLTM::SendSocketMessage(std::string topic, json message)
 	socket.send(data.dump());
 }
 
-void RLTM::Log(std::string message)
-{
-	cvarManager->log(message);
-}
-
-
-/*
-	Private
-*/
-void RLTM::FetchGameData(int isReplayingGoad)
+ServerWrapper RLTM::GetServerWrapper()
 {
 	ServerWrapper localServer = gameWrapper->GetGameEventAsServer();
 	ServerWrapper onlineServer = gameWrapper->GetOnlineGame();
 
+	if (!onlineServer.IsNull()) return onlineServer;
+	if (!localServer.IsNull()) return localServer;
+	return null;
+}
+
+void RLTM::FetchGameData(int isReplayingGoad)
+{
+	ServerWrapper server = GetServerWrapper();
+
 	json message;
 
-	if (!onlineServer.IsNull())
+	if (!server.IsNull())
 	{
-		message["value"] = onlineServer.GetSecondsRemaining();
-		message["score"] = GetGameScore(onlineServer);
-		message["isOvertime"] = onlineServer.GetbOverTime();
-		message["isReplay"] = isReplayingGoad;
-	}
-	else if (!localServer.IsNull())
-	{
-		message["value"] = localServer.GetSecondsRemaining();
-		message["score"] = GetGameScore(localServer);
-		message["isOvertime"] = localServer.GetbOverTime();
+		message["value"] = server.GetSecondsRemaining();
+		message["score"] = GetGameScore(server);
+		message["isOvertime"] = server.GetbOverTime();
 		message["isReplay"] = isReplayingGoad;
 	}
 
@@ -181,4 +148,33 @@ std::array<int, 2> RLTM::GetGameScore(ServerWrapper server)
 				return { serverTeams.Get(0).GetScore(), serverTeams.Get(1).GetScore() };
 
 	return { serverTeams.Get(1).GetScore(), serverTeams.Get(0).GetScore() };
+}
+
+void RLTM::SetSpectatorUI(int sleep)
+{
+	ServerWrapper server = GetServerWrapper()
+
+	if (!server.IsNull())
+	{
+		PlayerControllerWrapper serverLocalPrimaryPlayer = server.GetLocalPrimaryPlayer();
+		if (serverLocalPrimaryPlayer.isNull()) return;
+
+		PriWrapper serverLocalPrimaryPlayerPRI = serverLocalPrimaryPlayer.GetPRI();
+		if (!serverLocalPrimaryPlayerPRI.isNull() && serverLocalPrimaryPlayerPRI.IsSpectator())
+			cvarManager->executeCommand("sleep " + std::to_string(sleep) + "; replay_gui hud 1; replay_gui names 1; replay_gui matchinfo 1; sleep 16; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
+	}
+}
+
+void RLTM::RemoveStatGraph()
+{
+	EngineTAWrapper engine = gameWrapper->GetEngine();
+	if (engine.IsNull()) return;
+
+	StatGraphSystemWrapper statGraphs = engine.GetStatGraphs();
+	if (!statGraphs.IsNull()) statGraphs.SetGraphLevel(6);
+}
+
+void RLTM::Log(std::string message)
+{
+	cvarManager->log(message);
 }
