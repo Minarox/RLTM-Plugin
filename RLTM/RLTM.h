@@ -39,5 +39,6 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	// Game HUD
 	void SetSpectatorUI(int sleep);
 	void RemoveStatGraph();
+	void SetReady()
 };
 
