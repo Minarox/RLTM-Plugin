@@ -22,7 +22,7 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	virtual void onUnload();
 
 	// Hooks
-	bool hooked;
+	bool isHooked;
 	void HookEvents();
 	void UnhookEvents();
 
@@ -32,6 +32,7 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void SendSocketMessage(std::string topic, json message);
 
 	// Game datas
+	bool isValidGame;
 	ServerWrapper GetServerWrapper();
 	void FetchGameData(int isReplayingGoal);
 	std::array<int, 2> GetGameScore(ServerWrapper server);
