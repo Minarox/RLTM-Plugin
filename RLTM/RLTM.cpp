@@ -89,6 +89,7 @@ void RLTM::InitSocket()
 		{
 		case ix::WebSocketMessageType::Open:
 			cvarManager->log("Socket connected");
+			if (oldData) socket.send(oldData.dump());
 			break;
 
 		case ix::WebSocketMessageType::Message:
@@ -109,8 +110,6 @@ void RLTM::InitSocket()
 
 void RLTM::SendSocketMessage(std::string topic, json message)
 {
-	if (socket.getReadyState() != ix::ReadyState::Open) return;
-
 	json data;
 	data["topic"] = topic;
 	data["payload"] = message;
@@ -118,6 +117,7 @@ void RLTM::SendSocketMessage(std::string topic, json message)
 	if (data.dump() == oldData.dump()) return;
 	oldData = data;
 
+	if (socket.getReadyState() != ix::ReadyState::Open) return;
 	socket.send(data.dump());
 }
 
