@@ -97,7 +97,7 @@ void RLTM::InitSocket()
 		{
 		case ix::WebSocketMessageType::Open:
 			cvarManager->log("Socket connected");
-			if (oldData[Topic.MATCH]) socket.send(oldData[Topic.MATCH].dump());
+			if (oldData["match"] != nullptr) socket.send(oldData["match"].dump());
 			break;
 
 		case ix::WebSocketMessageType::Message:
@@ -116,7 +116,7 @@ void RLTM::InitSocket()
 	socket.start();
 }
 
-void RLTM::SendSocketMessage(Topic topic, json payload)
+void RLTM::SendSocketMessage(std::string topic, json payload)
 {
 	json data;
 	data["topic"] = topic;
@@ -150,7 +150,7 @@ ServerWrapper RLTM::GetServerWrapper()
 void RLTM::ResetDatas()
 {
 	isPlayingReplay = 0;
-	SendSocketMessage(Topic.MATCH, {});
+	SendSocketMessage("match", {});
 }
 
 void RLTM::GetMatchData()
@@ -168,7 +168,7 @@ void RLTM::GetMatchData()
 	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["value"] = oldData["payload"]["value"];
 	else payload["value"] = server.GetSecondsRemaining();
 
-	SendSocketMessage(Topic.MATCH, payload);
+	SendSocketMessage("match", payload);
 }
 
 std::array<int, 2> RLTM::GetGameScore(ServerWrapper server)

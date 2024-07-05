@@ -15,13 +15,6 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 
 using json = nlohmann::json;
 
-enum Topic {
-  MATCH = "match",
-  PLAYER = "player",
-  BOOST = "boost",
-  STATISTIC = "statistic"
-};
-
 class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
 	// Boilerplate
@@ -37,7 +30,7 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	ix::WebSocket socket;
 	json oldData;
 	void InitSocket();
-	void SendSocketMessage(Topic topic, json payload);
+	void SendSocketMessage(std::string topic, json payload);
 
 	// Game datas
 	int isPlayingReplay = 0;
