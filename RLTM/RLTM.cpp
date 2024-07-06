@@ -2,7 +2,7 @@
 #include "RLTM.h"
 
 
-BAKKESMOD_PLUGIN(RLTM, "Rocket League Tournament Manager plugin for BakkesMod", plugin_version, PLUGINTYPE_SPECTATOR)
+BAKKESMOD_PLUGIN(RLTM, "Rocket League Tournament Manager", plugin_version, PLUGINTYPE_SPECTATOR)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
@@ -13,6 +13,14 @@ void RLTM::onLoad()
 	ix::initNetSystem();
 	HookEvents();
 	InitSocket();
+
+	ServerWrapper server = GetServerWrapper();
+	if (server)
+	{
+		GetMatchData();
+		GetPlayersData();
+	}
+	else ResetDatas();
 
 	cvarManager->log("RLTM Plugin loaded");
 }
@@ -30,17 +38,18 @@ void RLTM::HookEvents()
 {
 	if (isHooked) return;
 
-	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", std::bind(&RLTM::GetMatchData, this));
-	gameWrapper->HookEvent("Function TAGame.Ball_TA.Explode", std::bind(&RLTM::GetMatchData, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded", std::bind(&RLTM::GetPlayersData, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved", std::bind(&RLTM::GetPlayersData, this));
+
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.InitGame", std::bind(&RLTM::OnMatchStarting, this));
+	gameWrapper->HookEvent("Function TAGame.Team_TA.OnScoreUpdated", std::bind(&RLTM::GetMatchData, this));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", std::bind(&RLTM::GetMatchData, this));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated", std::bind(&RLTM::GetMatchData, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated", std::bind(&RLTM::GetMatchData, this));	
+	gameWrapper->HookEvent("Function Engine.WorldInfo.EventPauseChanged", std::bind(&RLTM::GetMatchData, this));	
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded", std::bind(&RLTM::GetMatchData, this));
 
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", std::bind(&RLTM::SetReplayState, this, 1));
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", std::bind(&RLTM::SetReplayState, this, 0));
-
-	//gameWrapper->HookEvent("Function TAGame.GameEvent_Team_TA.AddPlayerToTeam", std::bind(&RLTM::GetPlayers, this));
-	//gameWrapper->HookEvent("Function TAGame.GameEvent_Team_TA.RemovePlayerFromTeam", std::bind(&RLTM::GetPlayers, this));
 
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&RLTM::ResetDatas, this));
 
@@ -56,17 +65,18 @@ void RLTM::HookEvents()
 
 void RLTM::UnhookEvents()
 {
-	gameWrapper->UnhookEvent("Function GameEvent_TA.Countdown.BeginState");
-	gameWrapper->UnhookEvent("Function TAGame.Ball_TA.Explode");
+	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded");
+	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved");
+
+	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.InitGame");
+	gameWrapper->UnhookEvent("Function TAGame.Team_TA.OnScoreUpdated");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated");
+	gameWrapper->UnhookEvent("Function Engine.WorldInfo.EventPauseChanged");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded");
 
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState");
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState");
-
-	//gameWrapper->UnhookEvent("Function TAGame.GameEvent_Team_TA.AddPlayerToTeam");
-	//gameWrapper->UnhookEvent("Function TAGame.GameEvent_Team_TA.RemovePlayerFromTeam");
 
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed");
 
@@ -86,7 +96,7 @@ void RLTM::InitSocket()
 
 	socket.setUrl("ws://localhost:3000/?token=1234");
 	socket.setHandshakeTimeout(4);
-	socket.setPingInterval(5);
+	socket.setPingInterval(2);
 	socket.enableAutomaticReconnection();
 	socket.setMinWaitBetweenReconnectionRetries(1000);
 	socket.setMaxWaitBetweenReconnectionRetries(5000);
@@ -97,7 +107,8 @@ void RLTM::InitSocket()
 		{
 		case ix::WebSocketMessageType::Open:
 			cvarManager->log("Socket connected");
-			if (oldData["match"] != nullptr) socket.send(oldData["match"].dump());
+			if (!oldData["match"].is_null()) socket.send(oldData["match"].dump());
+			if (!oldData["players"].is_null()) socket.send(oldData["players"].dump());
 			break;
 
 		case ix::WebSocketMessageType::Message:
@@ -147,10 +158,32 @@ ServerWrapper RLTM::GetServerWrapper()
 	return NULL;
 }
 
-void RLTM::ResetDatas()
+void RLTM::GetPlayersData()
+{
+	ServerWrapper server = GetServerWrapper();
+	if (!server) return;
+
+	ArrayWrapper<PriWrapper> players = server.GetPRIs();
+	if (players.IsNull()) return;
+
+	json payload = json::array();
+	for (PriWrapper player : players)
+	{
+		json playerData;
+		playerData["name"] = player.GetPlayerName().ToString();
+		playerData["uid"] = player.GetUniqueIdWrapper().GetIdString();
+
+		payload.push_back(playerData);
+	}
+
+	SendSocketMessage("players", payload);
+}
+
+void RLTM::OnMatchStarting()
 {
 	isPlayingReplay = 0;
-	SendSocketMessage("match", {});
+	GetMatchData();
+	GetPlayersData();
 }
 
 void RLTM::GetMatchData()
@@ -164,8 +197,9 @@ void RLTM::GetMatchData()
 	payload["isOvertime"] = server.GetbOverTime();
 	payload["isReplay"] = isPlayingReplay;
 	payload["isEnded"] = server.GetbMatchEnded();
+	payload["isPaused"] = gameWrapper->IsPaused() ? 1 : 0;
 
-	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["value"] = oldData["payload"]["value"];
+	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["value"] = oldData["match"]["payload"]["value"];
 	else payload["value"] = server.GetSecondsRemaining();
 
 	SendSocketMessage("match", payload);
@@ -186,27 +220,17 @@ std::array<int, 2> RLTM::GetGameScore(ServerWrapper server)
 	return { teams.Get(1).GetScore(), teams.Get(0).GetScore() };
 }
 
-/*void RLTM::GetPlayers()
-{
-	ServerWrapper server = GetServerWrapper();
-	if (!server) return;
-
-	//PlayerControllerWrapper primaryPlayer = server.GetLocalPrimaryPlayer();
-	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
-
-	if (server && !teams.IsNull())
-	{
-		for (TeamWrapper team: teams)
-		{
-			
-		}
-	}
-}*/
-
 void RLTM::SetReplayState(int value)
 {
 	isPlayingReplay = value;
 	GetMatchData();
+}
+
+void RLTM::ResetDatas()
+{
+	isPlayingReplay = 0;
+	SendSocketMessage("match", {});
+	SendSocketMessage("players", {});
 }
 
 void RLTM::SetSpectatorUI(int sleep)
