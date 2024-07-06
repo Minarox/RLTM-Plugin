@@ -35,10 +35,12 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	// Game datas
 	int isPlayingReplay = 0;
 	ServerWrapper GetServerWrapper();
-	void ResetDatas();
+	void GetPlayersData();
+	void OnMatchStarting();
 	void GetMatchData();
 	std::array<int, 2> GetGameScore(ServerWrapper server);
 	void SetReplayState(int value);
+	void ResetDatas();
 
 	// Game HUD
 	void SetSpectatorUI(int sleep);
