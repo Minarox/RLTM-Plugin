@@ -21,6 +21,11 @@ struct StatTickerParams {
 	uintptr_t StatEvent;
 };
 
+struct StatEventParams {
+    uintptr_t PRI;
+    uintptr_t StatEvent;
+};
+
 class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
 	// Boilerplate
@@ -39,13 +44,12 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void SendSocketMessage(std::string topic, json payload);
 
 	// Game datas
-	int isPlayingReplay = 0;
 	ServerWrapper GetServerWrapper();
-	void GetPlayersData();
+	void GetPlayersData(std::string caller);
 	void GetMatchData(std::string caller);
 	std::array<int, 2> GetGameScore(ServerWrapper server);
-	json GetStatistics(ServerWrapper server);
-	void GetPlayerStatistics(ServerWrapper caller, void* params);
+	json GetGameStatistics(ServerWrapper server);
+	void GetStatEventData(ServerWrapper server, void* params, std::string caller);
 	void ResetDatas();
 
 	// Game HUD
