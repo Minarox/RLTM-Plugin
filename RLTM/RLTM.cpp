@@ -353,7 +353,7 @@ void RLTM::GetEntitiesData()
 			json carData;
 			carData["name"] = player.GetPlayerName().ToString();
 			carData["uid"] = player.GetUniqueIdWrapper().GetIdString();
-			carData["speed"] = (car.GetVelocity().magnitude() * 0.036f) + 0.5f;
+			carData["speed"] = floor(((car.GetVelocity().magnitude() * 0.036f) + 0.5f) / 0.1 + 0.5) * 0.1;
 			carData["id"] = car.GetLoadoutBody();
 			carData["location"] = car.GetLocation();
 			carData["velocity"] = car.GetVelocity();
@@ -367,7 +367,7 @@ void RLTM::GetEntitiesData()
 			
 			auto boost = car.GetBoostComponent();
 			if (boost.IsNull()) carData["boost"] = -1;
-			else carData["boost"] = boost.GetCurrentBoostAmount() * 100;
+			else carData["boost"] = (int)(boost.GetCurrentBoostAmount() * 100);
 
 			payload["cars"][player.GetTeamNum()].push_back(carData);
 		}
