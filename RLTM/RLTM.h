@@ -15,6 +15,12 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 
 using json = nlohmann::json;
 
+struct StatTickerParams {
+	uintptr_t Receiver;
+	uintptr_t Victim;
+	uintptr_t StatEvent;
+};
+
 class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
 	// Boilerplate
@@ -36,10 +42,10 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	int isPlayingReplay = 0;
 	ServerWrapper GetServerWrapper();
 	void GetPlayersData();
-	void OnMatchStarting();
-	void GetMatchData();
+	void GetMatchData(std::string caller);
 	std::array<int, 2> GetGameScore(ServerWrapper server);
-	void SetReplayState(int value);
+	json GetStatistics(ServerWrapper server);
+	void GetPlayerStatistics(ServerWrapper caller, void* params);
 	void ResetDatas();
 
 	// Game HUD
