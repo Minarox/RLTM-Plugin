@@ -15,13 +15,32 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 
 using json = nlohmann::json;
 
-struct StatTickerParams {
+enum Event
+{
+	PLAYERS,
+	MATCH,
+	STATISTICS,
+	STATISTIC,
+	ENTITIES
+};
+
+map<Event, string> eventToTopic = {
+	{ PLAYERS, "players" }, 
+	{ MATCH, "match" }, 
+	{ STATISTICS, "statistics" },
+	{ STATISTIC, "statistic" },
+	{ ENTITIES, "entities" }
+}; 
+
+struct StatTickerParams
+{
 	uintptr_t Receiver;
 	uintptr_t Victim;
 	uintptr_t StatEvent;
 };
 
-struct StatEventParams {
+struct StatEventParams
+{
     uintptr_t PRI;
     uintptr_t StatEvent;
 };
@@ -41,6 +60,7 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	ix::WebSocket socket;
 	json oldData;
 	void InitSocket();
+	std::string GetTopic(Event event);
 	void SendSocketMessage(std::string topic, json payload);
 
 	// Game datas

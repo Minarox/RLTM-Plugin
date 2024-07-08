@@ -143,8 +143,10 @@ void RLTM::InitSocket()
 	socket.start();
 }
 
-void RLTM::SendSocketMessage(std::string topic, json payload)
+void RLTM::SendSocketMessage(Event event, json payload)
 {
+	std::string topic = eventToTopic(event);
+
 	json data;
 	data["topic"] = topic;
 	data["payload"] = payload;
@@ -194,7 +196,7 @@ void RLTM::GetPlayersData(std::string caller)
 			payload.push_back(playerData);
 		}
 
-		SendSocketMessage("players", payload);
+		SendSocketMessage(Event.PLAYERS, payload);
 	}
 
 	GetMatchData(caller);
@@ -224,7 +226,7 @@ void RLTM::GetMatchData(std::string caller)
 	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData["match"]["payload"]["time"];
 	else payload["time"] = server.GetSecondsRemaining();
 
-	SendSocketMessage("match", payload);
+	SendSocketMessage(Event.MATCH, payload);
 }
 
 std::array<int, 2> RLTM::GetScore(ServerWrapper server)
@@ -272,7 +274,7 @@ void RLTM::GetStatisticsData()
 		statistics[player.GetTeamNum()].push_back(playerData);
 	}
 
-	SendSocketMessage("statistics", payload);
+	SendSocketMessage(Event.STATISTICS, payload);
 }
 
 void RLTM::OnStatTickerMessage(ServerWrapper _server, void* params)
@@ -311,7 +313,7 @@ void RLTM::GetPlayerStatData(PriWrapper player, StatEventWrapper event)
 	payload["uid"] = player.GetUniqueIdWrapper().GetIdString();
 	payload["event_name"] = event.GetEventName();
 
-	SendSocketMessage("statistic", payload);
+	SendSocketMessage(Event.STATISTIC, payload);
 }
 
 void RLTM::GetEntitiesData()
@@ -377,15 +379,15 @@ void RLTM::GetEntitiesData()
 		}
 	}
 
-	SendSocketMessage("entities", payload);
+	SendSocketMessage(Event.ENTITIES, payload);
 }
 
 void RLTM::ResetDatas()
 {
-	SendSocketMessage("players", {});
-	SendSocketMessage("match", {});
-	SendSocketMessage("statistics", {});
-	SendSocketMessage("entities", {});
+	SendSocketMessage(Event.PLAYERS, {});
+	SendSocketMessage(Event.MATCH, {});
+	SendSocketMessage(Event.STATISTICS, {});
+	SendSocketMessage(Event.ENTITIES, {});
 }
 
 void RLTM::SetSpectatorUI(int sleep)
