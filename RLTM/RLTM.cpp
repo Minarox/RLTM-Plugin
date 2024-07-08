@@ -311,7 +311,7 @@ void RLTM::GetPlayerStatData(PriWrapper player, StatEventWrapper event)
 	json payload;
 	payload["name"] = player.GetPlayerName().ToString();
 	payload["uid"] = player.GetUniqueIdWrapper().GetIdString();
-	payload["event_name"] = event.GetEventName();
+	payload["eventName"] = event.GetEventName();
 
 	SendSocketMessage(Event.STATISTIC, payload);
 }
