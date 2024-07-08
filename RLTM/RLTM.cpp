@@ -314,7 +314,7 @@ void RLTM::GetEntitiesData()
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
-	if (oldData["match"]["payload"]["isStarted"] == 0 || server.GetbMatchEnded()) return;
+	if (oldData["match"]["payload"]["isStarted"] == 0 || server.GetbMatchEnded() || gameWrapper->IsPaused()) return;
 
 	json payload;
 	payload["balls"] = json::array();
