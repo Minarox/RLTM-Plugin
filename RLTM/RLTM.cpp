@@ -51,8 +51,8 @@ void RLTM::HookEvents()
 	gameWrapper->HookEvent("Function Engine.WorldInfo.EventPauseChanged",            std::bind(&RLTM::GetMatchData, this, std::placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded",    std::bind(&RLTM::GetMatchData, this, std::placeholders::_1));
 
-	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", std::bind(&RLTM::GetStatData, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent",         std::bind(&RLTM::GetStatData, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", std::bind(&RLTM::OnStatTickerMessage, this, std::placeholders::_1, std::placeholders::_2));
+	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent",         std::bind(&RLTM::OnStatEvent, this, std::placeholders::_1, std::placeholders::_2));
 
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&RLTM::ResetDatas, this));
 
@@ -263,7 +263,7 @@ json RLTM::GetGameStatistics(ServerWrapper server)
 			if (boost.IsNull()) playerData["car"]["boost"] = -1;
 			else playerData["car"]["boost"] = boost.GetCurrentBoostAmount();
 
-			playerData["car"]["speed"] = (car.GetVelocity().magnitude() * 0.036f) + 0.5f
+			playerData["car"]["speed"] = (car.GetVelocity().magnitude() * 0.036f) + 0.5f;
 			playerData["car"]["isSuperSonic"] = car.GetbSuperSonic();
 			playerData["car"]["isOnWall"] = car.IsOnWall();
 			playerData["car"]["isOnGround"] = car.IsOnGround();
@@ -278,32 +278,40 @@ json RLTM::GetGameStatistics(ServerWrapper server)
 	return statistics;
 }
 
-void RLTM::GetStatEventData(ServerWrapper _server, void* params, std::string caller)
+void RLTM::OnStatTickerMessage(ServerWrapper _server, void* params)
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
 
-	PriWrapper player;
-	StatEventWrapper event;
+	StatTickerParams* pStruct = (StatTickerParams*)params;
+	PriWrapper player = PriWrapper(pStruct->Receiver);
+	StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
 
-	if (caller == "Function TAGame.GFxHUD_TA.HandleStatTickerMessage")
-	{
-		StatTickerParams* pStruct = (StatTickerParams*)params;
-		player = PriWrapper(pStruct->Receiver);
-		event = StatEventWrapper(pStruct->StatEvent);
-	}
-	else
-	{
-		StatEventParams* pStruct = (StatEventParams*)params;
-    	PriWrapper player = PriWrapper(pStruct->PRI);
-    	StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
-	}
+	GetPlayerStatData(player, event);
+}
+
+void RLTM::OnStatEvent(ServerWrapper _server, void* params)
+{
+	ServerWrapper server = GetServerWrapper();
+	if (!server) return;
+
+	StatEventParams* pStruct = (StatEventParams*)params;
+    PriWrapper player = PriWrapper(pStruct->PRI);
+    StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
+
+	GetPlayerStatData(player, event);
+}
+
+void RLTM::GetPlayerStatData(PriWrapper player, StatEventWrapper event)
+{
+	ServerWrapper server = GetServerWrapper();
+	if (!server) return;
 
 	if (player.IsNull() || event.IsNull()) return;
-	
+
 	json payload;
-	payload["name"] = receiver.GetPlayerName().ToString();
-	payload["uid"] = receiver.GetUniqueIdWrapper().GetIdString();
+	payload["name"] = player.GetPlayerName().ToString();
+	payload["uid"] = player.GetUniqueIdWrapper().GetIdString();
 	payload["event_name"] = event.GetEventName();
 
 	SendSocketMessage("statistic", payload);
