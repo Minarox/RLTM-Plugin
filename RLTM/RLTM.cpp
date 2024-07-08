@@ -17,8 +17,9 @@ void RLTM::onLoad()
 	ServerWrapper server = GetServerWrapper();
 	if (server)
 	{
-		GetMatchData("onLoad");
 		GetPlayersData("onLoad");
+		GetMatchData("onLoad");
+		GetStatisticsData();
 		GetEntitiesData();
 	}
 	else ResetDatas();
@@ -207,12 +208,12 @@ void RLTM::GetMatchData(std::string caller)
 	GetEntitiesData();
 
 	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData["match"]["payload"]["isStarted"] == 1) return;
+	GetStatisticsData();
 
 	json payload;
 	payload["map"] = gameWrapper->GetCurrentMap();
 	payload["score"] = GetScore(server);
 	payload["duration"] = server.GetGameTime();
-	payload["statistics"] = GetStatistics(server);
 	payload["isUnlimited"] = server.GetbUnlimitedTime();
 	payload["isStarted"] = server.GetbBallHasBeenHit() || caller == "Function GameEvent_TA.Countdown.BeginState" ? 1 : 0;
 	payload["isPaused"] = gameWrapper->IsPaused() ? 1 : 0;
@@ -241,12 +242,15 @@ std::array<int, 2> RLTM::GetScore(ServerWrapper server)
 	return { teams.Get(1).GetScore(), teams.Get(0).GetScore() };
 }
 
-json RLTM::GetStatistics(ServerWrapper server)
+void RLTM::GetStatisticsData()
 {
+	ServerWrapper server = GetServerWrapper();
+	if (!server) return;
+
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 	if (players.IsNull() || !players.Count()) return json::array();
 
-	json statistics = json::array();
+	json payload = json::array();
 	for (PriWrapper player : players)
 	{
 		if (player.IsNull() || player.GetTeamNum() == 255) continue;
@@ -268,7 +272,7 @@ json RLTM::GetStatistics(ServerWrapper server)
 		statistics[player.GetTeamNum()].push_back(playerData);
 	}
 
-	return statistics;
+	SendSocketMessage("statistics", payload);
 }
 
 void RLTM::OnStatTickerMessage(ServerWrapper _server, void* params)
@@ -378,8 +382,9 @@ void RLTM::GetEntitiesData()
 
 void RLTM::ResetDatas()
 {
-	SendSocketMessage("match", {});
 	SendSocketMessage("players", {});
+	SendSocketMessage("match", {});
+	SendSocketMessage("statistics", {});
 	SendSocketMessage("entities", {});
 }
 
