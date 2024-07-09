@@ -24,14 +24,6 @@ enum Event
 	ENTITIES
 };
 
-map<Event, string> eventToTopic = {
-	{ PLAYERS, "players" }, 
-	{ MATCH, "match" }, 
-	{ STATISTICS, "statistics" },
-	{ STATISTIC, "statistic" },
-	{ ENTITIES, "entities" }
-}; 
-
 struct StatTickerParams
 {
 	uintptr_t Receiver;
@@ -60,19 +52,19 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	ix::WebSocket socket;
 	json oldData;
 	void InitSocket();
-	std::string GetTopic(Event event);
-	void SendSocketMessage(std::string topic, json payload);
+	void SendSocketMessage(Event event, json payload);
 
-	// Game datas
+	// Game data
 	ServerWrapper GetServerWrapper();
-	void GetPlayersData(std::string caller);
-	void GetMatchData(std::string caller);
+	void GetGameData(std::string caller);
+	void GetPlayersData(ServerWrapper server);
+	void GetMatchData(ServerWrapper server, std::string caller);
 	std::array<int, 2> GetScore(ServerWrapper server);
-	json GetStatisticsData();
-	void OnStatTickerMessage(ServerWrapper server, void* params);
+	void GetStatisticsData(ServerWrapper server);
+	/*void OnStatTickerMessage(ServerWrapper server, void* params);
 	void OnStatEvent(ServerWrapper server, void* params);
-	void GetPlayerStatData(PriWrapper player, StatEventWrapper event);
-	void GetEntitiesData();
+	void GetPlayerStatData(PriWrapper player, StatEventWrapper event);*/
+	//void GetEntitiesData();
 	void ResetDatas();
 
 	// Game HUD
