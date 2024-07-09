@@ -116,7 +116,7 @@ void RLTM::InitSocket()
 {
 	if (socket.getReadyState() != ix::ReadyState::Closed) return;
 
-	socket.setUrl("ws://localhost:3000/?token=1234");
+	socket.setUrl("ws://localhost:3000/game?token=1234");
 	socket.setHandshakeTimeout(4);
 	socket.setPingInterval(2);
 	socket.enableAutomaticReconnection();
@@ -199,8 +199,8 @@ void RLTM::GetGameData(std::string caller)
 	if (!server) return;
 
 	GetPlayersData(server);
-	GetMatchData(server, caller);
-	GetStatisticsData(server);
+	//GetMatchData(server, caller);
+	//GetStatisticsData(server);
 }
 
 void RLTM::GetPlayersData(ServerWrapper server)
@@ -211,13 +211,9 @@ void RLTM::GetPlayersData(ServerWrapper server)
 	json payload = json::array();
 	for (PriWrapper player : players)
 	{
-		std::string plateform = player.GetUniqueIdWrapper().GetIdString();
-
 		json playerData;
 		playerData["name"] = player.GetPlayerName().ToString();
-		playerData["uid"] = player.GetUniqueIdWrapper().GetUID();
-		playerData["plateform"] = plateform.substr(0, plateform.find('|'));
-		playerData["screenID"] = player.GetUniqueIdWrapper().GetSplitscreenID();
+		playerData["uid"] = player.GetUniqueIdWrapper().GetIdString();
 		playerData["bot"] = (bool)player.GetbBot();
 
 		payload.push_back(playerData);
@@ -406,7 +402,7 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 
 void RLTM::ResetDatas()
 {
-	for (Event event : { PLAYERS, MATCH, STATISTICS, ENTITIES })
+	for (Event event : { PLAYERS })
 		SendSocketMessage(event, {});
 }
 
