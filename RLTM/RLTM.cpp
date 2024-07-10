@@ -200,12 +200,12 @@ void RLTM::GetMatchData(std::string caller)
 	payload["map"] = gameWrapper->GetCurrentMap();
 	payload["score"] = GetScore(server);
 	payload["duration"] = server.GetGameTime();
-	payload["isUnlimited"] = server.GetbUnlimitedTime();
-	payload["isStarted"] = oldData[eventToTopic[MATCH]]["isStarted"] == 1 || server.GetbBallHasBeenHit() || caller == "Function GameEvent_TA.Countdown.BeginState" ? 1 : 0;
-	payload["isPaused"] = gameWrapper->IsPaused() && !server.GetbMatchEnded() ? 1 : 0;
-	payload["isOvertime"] = server.GetbOverTime();
-	payload["isEnded"] = server.GetbMatchEnded();
-	payload["isReplay"] = payload["isStarted"] == 1 && !server.GetbRoundActive() && !server.GetbMatchEnded() && caller != "Function GameEvent_TA.Countdown.BeginState" && (!server.GetbOverTime() || server.GetbOverTime() && server.GetSecondsRemaining() != 0) ? 1 : 0;
+	payload["isUnlimited"] = (bool) server.GetbUnlimitedTime();
+	payload["isStarted"] = oldData[eventToTopic[MATCH]]["isStarted"] == 1 || server.GetbBallHasBeenHit() || caller == "Function GameEvent_TA.Countdown.BeginState";
+	payload["isPaused"] = gameWrapper->IsPaused() && !server.GetbMatchEnded();
+	payload["isOvertime"] = (bool) server.GetbOverTime();
+	payload["isEnded"] = (bool) server.GetbMatchEnded();
+	payload["isReplay"] = payload["isStarted"] == 1 && !server.GetbRoundActive() && !server.GetbMatchEnded() && caller != "Function GameEvent_TA.Countdown.BeginState" && (!server.GetbOverTime() || server.GetbOverTime() && server.GetSecondsRemaining() != 0);
 
 	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["time"];
 	else payload["time"] = server.GetSecondsRemaining();
