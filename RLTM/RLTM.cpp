@@ -124,7 +124,14 @@ void RLTM::InitSocket()
 			{
 			case ix::WebSocketMessageType::Open:
 				cvarManager->log("Socket connected");
-				for (auto& [key, value] : oldData.items()) socket.send(value.dump());
+				for (auto& [key, value] : oldData.items())
+				{
+					json data;
+					data["topic"] = eventToTopic[key];
+					data["payload"] = value;
+
+					socket.send(data.dump());
+				}
 				break;
 
 			case ix::WebSocketMessageType::Message:
@@ -151,8 +158,8 @@ void RLTM::SendSocketMessage(Event event, json payload)
 	data["topic"] = topic;
 	data["payload"] = payload;
 
-	if (data.dump() == oldData[topic].dump()) return;
-	if (topic != eventToTopic[STATISTIC]) oldData[topic] = data;
+	if (data["payload"].dump() == oldData[topic].dump()) return;
+	if (topic != eventToTopic[STATISTIC]) oldData[topic] = data["payload"];
 
 	if (socket.getReadyState() != ix::ReadyState::Open) return;
 	socket.send(data.dump());
@@ -187,7 +194,7 @@ void RLTM::GetMatchData(std::string caller)
 	if (!server && caller == "onLoad") ResetDatas();
 	if (!server) return;
 
-	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["payload"]["isStarted"] == 1) return;
+	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == 1) return;
 
 	json payload;
 	payload["map"] = gameWrapper->GetCurrentMap();
@@ -200,7 +207,7 @@ void RLTM::GetMatchData(std::string caller)
 	payload["isEnded"] = server.GetbMatchEnded();
 	payload["isReplay"] = server.GetbBallHasBeenHit() && !server.GetbRoundActive() && !server.GetbMatchEnded() && caller != "Function GameEvent_TA.Countdown.BeginState" ? 1 : 0;
 
-	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["payload"]["time"];
+	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["time"];
 	else payload["time"] = server.GetSecondsRemaining();
 
 	SendSocketMessage(MATCH, payload);
@@ -237,7 +244,7 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 
 		std::string playerName = player.GetPlayerName().ToString();
 		std::string playerUID = player.GetUniqueIdWrapper().GetIdString();
-		json data = oldData[eventToTopic[STATISTICS]]["payload"][player.GetTeamNum()][playerUID + '_' + playerName];
+		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
 
 		json playerData;
 		playerData["mvp"] = (bool) player.GetbMatchMVP();
@@ -270,10 +277,10 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 
 	std::string playerName = player.GetPlayerName().ToString();
 	std::string playerUID = player.GetUniqueIdWrapper().GetIdString();
-	json data = oldData[eventToTopic[STATISTICS]]["payload"][player.GetTeamNum()][playerUID + '_' + playerName];
+	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
 
 	if (!data[event.GetEventName()].is_null())
-		oldData[eventToTopic[STATISTICS]]["payload"][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
+		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
 	json payload;
 	payload["name"] = playerName;
@@ -288,7 +295,7 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 //{
 //	ServerWrapper server = GetServerWrapper();
 //	if (!server) return;
-//	if (oldData["match"]["payload"]["isStarted"] == 0 || server.GetbMatchEnded() || gameWrapper->IsPaused()) return;
+//	if (oldData[eventToTopic[MATCH]]["isStarted"] == 0 || server.GetbMatchEnded() || gameWrapper->IsPaused()) return;
 //
 //	json payload;
 //	payload["balls"] = json::array();
