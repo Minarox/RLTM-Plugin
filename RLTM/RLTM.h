@@ -24,6 +24,12 @@ enum Event
 	ENTITIES
 };
 
+std::map<Event, std::string> eventToTopic = {
+	{ MATCH, "match" },
+	{ STATISTIC, "statistic" },
+	{ ENTITIES, "entities" }
+};
+
 struct StatTickerParams
 {
 	uintptr_t Receiver;
@@ -56,14 +62,12 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 
 	// Game data
 	ServerWrapper GetServerWrapper();
-	void GetGameData(std::string caller);
-	void GetPlayersData(ServerWrapper server);
-	void GetMatchData(ServerWrapper server, std::string caller);
+	void GetMatchData(std::string caller);
 	std::array<int, 2> GetScore(ServerWrapper server);
-	void GetStatisticsData(ServerWrapper server);
-	/*void OnStatTickerMessage(ServerWrapper server, void* params);
+	json GetStatistics(ServerWrapper server);
+	void OnStatTickerMessage(ServerWrapper server, void* params);
 	void OnStatEvent(ServerWrapper server, void* params);
-	void GetPlayerStatData(PriWrapper player, StatEventWrapper event);*/
+	void GetPlayerStatData(PriWrapper player, StatEventWrapper event);
 	//void GetEntitiesData();
 	void ResetDatas();
 
