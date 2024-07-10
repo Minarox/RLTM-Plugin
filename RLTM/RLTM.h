@@ -17,7 +17,6 @@ using json = nlohmann::json;
 
 enum Event
 {
-	PLAYERS,
 	MATCH,
 	STATISTICS,
 	STATISTIC,
@@ -26,6 +25,7 @@ enum Event
 
 std::map<Event, std::string> eventToTopic = {
 	{ MATCH, "match" },
+	{ STATISTICS, "statistics" },
 	{ STATISTIC, "statistic" },
 	{ ENTITIES, "entities" }
 };
@@ -64,10 +64,8 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	ServerWrapper GetServerWrapper();
 	void GetMatchData(std::string caller);
 	std::array<int, 2> GetScore(ServerWrapper server);
-	json GetStatistics(ServerWrapper server);
-	void OnStatTickerMessage(ServerWrapper server, void* params, std::string caller);
-	void OnStatEvent(ServerWrapper server, void* params, std::string caller);
-	void GetPlayerStatData(PriWrapper player, StatEventWrapper event, std::string caller);
+	json GetStatisticsData(ServerWrapper server);
+	void GetPlayerStatData(ServerWrapper server, void* params);
 	//void GetEntitiesData();
 	void ResetDatas();
 
