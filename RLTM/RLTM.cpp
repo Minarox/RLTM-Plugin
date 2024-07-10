@@ -55,7 +55,7 @@ void RLTM::HookEvents()
 	gameWrapper->HookEvent("Function Engine.WorldInfo.EventPauseChanged", std::bind(&RLTM::GetMatchData, this, std::placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded", std::bind(&RLTM::GetMatchData, this, std::placeholders::_1));
 
-	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", std::bind(&RLTM::GetPlayerStatData, this, std::placeholders::_1, std::placeholders::_2));
+	//gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", std::bind(&RLTM::GetPlayerStatData, this, std::placeholders::_1, std::placeholders::_2));
 
 	//gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", std::bing(&RLTM::GetEntitiesData, this));
 
@@ -127,7 +127,7 @@ void RLTM::InitSocket()
 				for (auto& [key, value] : oldData.items())
 				{
 					json data;
-					data["topic"] = eventToTopic[key];
+					data["topic"] = key;
 					data["payload"] = value;
 
 					socket.send(data.dump());
@@ -201,18 +201,18 @@ void RLTM::GetMatchData(std::string caller)
 	payload["score"] = GetScore(server);
 	payload["duration"] = server.GetGameTime();
 	payload["isUnlimited"] = server.GetbUnlimitedTime();
-	payload["isStarted"] = server.GetbBallHasBeenHit() ? 1 : 0;
+	payload["isStarted"] = oldData[eventToTopic[MATCH]]["isStarted"] == 1 || server.GetbBallHasBeenHit() || caller == "Function GameEvent_TA.Countdown.BeginState" ? 1 : 0;
 	payload["isPaused"] = gameWrapper->IsPaused() && !server.GetbMatchEnded() ? 1 : 0;
 	payload["isOvertime"] = server.GetbOverTime();
 	payload["isEnded"] = server.GetbMatchEnded();
-	payload["isReplay"] = server.GetbBallHasBeenHit() && !server.GetbRoundActive() && !server.GetbMatchEnded() && caller != "Function GameEvent_TA.Countdown.BeginState" ? 1 : 0;
+	payload["isReplay"] = payload["isStarted"] == 1 && !server.GetbRoundActive() && !server.GetbMatchEnded() && caller != "Function GameEvent_TA.Countdown.BeginState" && (!server.GetbOverTime() || server.GetbOverTime() && server.GetSecondsRemaining() != 0) ? 1 : 0;
 
 	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["time"];
 	else payload["time"] = server.GetSecondsRemaining();
 
 	SendSocketMessage(MATCH, payload);
 
-	GetStatisticsData(server);
+	//GetStatisticsData(server);
 }
 
 std::array<int, 2> RLTM::GetScore(ServerWrapper server)
@@ -278,9 +278,10 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	std::string playerName = player.GetPlayerName().ToString();
 	std::string playerUID = player.GetUniqueIdWrapper().GetIdString();
 	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
+	cvarManager->log("Stat event: " + event.GetEventName() + ", json: " + data.dump());
 
-	if (!data[event.GetEventName()].is_null())
-		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
+	//if (!data[event.GetEventName()].is_null())
+		//oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
 	json payload;
 	payload["name"] = playerName;
