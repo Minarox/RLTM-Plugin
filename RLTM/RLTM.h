@@ -37,12 +37,6 @@ struct StatTickerParams
 	uintptr_t StatEvent;
 };
 
-struct StatEventParams
-{
-    uintptr_t PRI;
-    uintptr_t StatEvent;
-};
-
 class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
 	// Boilerplate
