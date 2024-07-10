@@ -64,7 +64,7 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	ServerWrapper GetServerWrapper();
 	void GetMatchData(std::string caller);
 	std::array<int, 2> GetScore(ServerWrapper server);
-	json GetStatisticsData(ServerWrapper server);
+	void GetStatisticsData(ServerWrapper server);
 	void GetPlayerStatData(ServerWrapper server, void* params);
 	//void GetEntitiesData();
 	void ResetDatas();

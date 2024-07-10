@@ -228,7 +228,7 @@ std::array<int, 2> RLTM::GetScore(ServerWrapper server)
 void RLTM::GetStatisticsData(ServerWrapper server)
 {
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
-	if (players.IsNull() || !players.Count()) return json::array();
+	if (players.IsNull() || !players.Count()) return;
 
 	json payload = json::array();
 	for (PriWrapper player : players)
@@ -250,7 +250,7 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 		playerData["carTouches"] = player.GetCarTouches();
 
 		for (std::string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
-		playerData[event] = !data[event].is_null() ? data[event] : 0;
+			playerData[event] = 0;
 
 		payload[player.GetTeamNum()][playerUID + '_' + playerName].push_back(playerData);
 	}
@@ -273,7 +273,7 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	json data = oldData[eventToTopic[STATISTICS]]["payload"][player.GetTeamNum()][playerUID + '_' + playerName];
 
 	if (!data[event.GetEventName()].is_null())
-		oldData[eventToTopic[STATISTICS]]["payload"][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1
+		oldData[eventToTopic[STATISTICS]]["payload"][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
 	json payload;
 	payload["name"] = playerName;
