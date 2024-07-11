@@ -58,7 +58,7 @@ void RLTM::HookEvents()
 	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", std::bind(&RLTM::OnStatTickerMessage, this, std::placeholders::_1, std::placeholders::_2));
 	//gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent", std::bind(&RLTM::OnStatEvent, this, std::placeholders::_1, std::placeholders::_2));
 
-	//gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", std::bing(&RLTM::GetEntitiesData, this));
+	gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", std::bind(&RLTM::GetEntitiesData, this));
 
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", std::bind(&RLTM::ResetDatas, this));
 
@@ -90,7 +90,7 @@ void RLTM::UnhookEvents()
 	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatTickerMessage");
 	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatEvent");
 
-	//gameWrapper->UnhookEventPost("Function Engine.GameViewportClient.Tick");
+	gameWrapper->UnhookEventPost("Function Engine.GameViewportClient.Tick");
 
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed");
 
@@ -318,79 +318,79 @@ void RLTM::GetPlayerStatData(PriWrapper player, StatEventWrapper event, ServerWr
 	GetStatisticsData(server);
 }
 
-//void RLTM::GetEntitiesData()
-//{
-//	ServerWrapper server = GetServerWrapper();
-//	if (!server) return;
-//	if (oldData[eventToTopic[MATCH]]["isStarted"] == 0 || server.GetbMatchEnded() || gameWrapper->IsPaused()) return;
-//
-//	json payload;
-//	payload["balls"] = json::array();
-//	payload["cars"] = json::array();
-//
-//	auto balls = server.GetGameBalls();
-//	if (!balls.IsNull() && balls.Count())
-//	{
-//		int i = 0;
-//		for (int index = 0; index < balls.Count(); index++)
-//		{
-//			auto ball = balls.Get(i);
-//			if (ball.IsNull()) continue;
-//
-//			Vector location = ball.GetLocation();
-//			Vector velocity = ball.GetVelocity();
-//			Rotator rotation = ball.GetRotation();
-//
-//			json ballData;
-//			ballData["id"] = i;
-//			ballData["location"] = { location.X, location.Y, location.Z };
-//			ballData["velocity"] = { velocity.X, velocity.Y, velocity.Z };
-//			ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
-//			
-//			payload["balls"].push_back(ballData);
-//			i++;
-//		}
-//	}
-//
-//	ArrayWrapper<PriWrapper> players = server.GetPRIs();
-//	if (!players.IsNull() && players.Count())
-//	{
-//		for (PriWrapper player : players)
-//		{
-//			if (player.IsNull() || player.GetTeamNum() == 255) continue;
-//
-//			CarWrapper car = player.GetCar();
-//			if (car.IsNull()) continue;
-//
-//			Vector location = car.GetLocation();
-//			Vector velocity = car.GetVelocity();
-//			Rotator rotation = car.GetRotation();
-//
-//			json carData;
-//			carData["name"] = player.GetPlayerName().ToString();
-//			carData["uid"] = player.GetUniqueIdWrapper().GetIdString();
-//			carData["speed"] = floor(((car.GetVelocity().magnitude() * 0.036f) + 0.5f) / 0.1 + 0.5) * 0.1;
-//			carData["id"] = car.GetLoadoutBody();
-//			carData["location"] = { location.X, location.Y, location.Z };
-//			carData["velocity"] = { velocity.X, velocity.Y, velocity.Z };
-//			carData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
-//			carData["isSuperSonic"] = car.GetbSuperSonic();
-//			carData["isOnWall"] = car.IsOnWall() ? 1 : 0;
-//			carData["isOnGround"] = car.IsOnGround() ? 1 : 0;
-//			carData["isInGoal"] = car.GetbWasInGoalZone();
-//			carData["isDodging"] = car.IsDodging() ? 1 : 0;
-//			carData["asFlip"] = car.HasFlip();
-//			
-//			auto boost = car.GetBoostComponent();
-//			if (boost.IsNull()) carData["boost"] = -1;
-//			else carData["boost"] = (int)(boost.GetCurrentBoostAmount() * 100);
-//
-//			payload["cars"][player.GetTeamNum()].push_back(carData);
-//		}
-//	}
-//
-//	SendSocketMessage(ENTITIES, payload);
-//}
+void RLTM::GetEntitiesData()
+{
+	ServerWrapper server = GetServerWrapper();
+	if (!server) return;
+	if (oldData[eventToTopic[MATCH]]["isStarted"] == 0 || server.GetbMatchEnded() || oldData[eventToTopic[MATCH]]["IsPaused"] == 1) return;
+
+	json payload;
+	payload["balls"] = json::array();
+	payload["cars"] = json::array();
+
+	auto balls = server.GetGameBalls();
+	if (!balls.IsNull() && balls.Count())
+	{
+		int i = 0;
+		for (int index = 0; index < balls.Count(); index++)
+		{
+			auto ball = balls.Get(i);
+			if (ball.IsNull()) continue;
+
+			Vector location = ball.GetLocation();
+			Vector velocity = ball.GetVelocity();
+			Rotator rotation = ball.GetRotation();
+
+			json ballData;
+			ballData["id"] = i;
+			ballData["location"] = { location.X, location.Y, location.Z };
+			ballData["velocity"] = { velocity.X, velocity.Y, velocity.Z };
+			ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
+			
+			payload["balls"].push_back(ballData);
+			i++;
+		}
+	}
+
+	ArrayWrapper<PriWrapper> players = server.GetPRIs();
+	if (!players.IsNull() && players.Count())
+	{
+		for (PriWrapper player : players)
+		{
+			if (player.IsNull() || player.GetTeamNum() == 255) continue;
+
+			CarWrapper car = player.GetCar();
+			if (car.IsNull()) continue;
+
+			std::string playerName = player.GetPlayerName().ToString();
+			std::string playerUID = player.GetUniqueIdWrapper().GetIdString();
+
+			Vector location = car.GetLocation();
+			Vector velocity = car.GetVelocity();
+			Rotator rotation = car.GetRotation();
+
+			json carData;
+			carData["speed"] = floor(((car.GetVelocity().magnitude() * 0.036f) + 0.5f) / 0.1 + 0.5) * 0.1;
+			carData["location"] = { location.X, location.Y, location.Z };
+			carData["velocity"] = { velocity.X, velocity.Y, velocity.Z };
+			carData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
+			carData["isSuperSonic"] = (bool) car.GetbSuperSonic();
+			carData["isOnWall"] = car.IsOnWall();
+			carData["isOnGround"] = car.IsOnGround();
+			carData["isInGoal"] = (bool) car.GetbWasInGoalZone();
+			carData["isDodging"] = car.IsDodging();
+			carData["asFlip"] = (bool) car.HasFlip();
+
+			auto boost = car.GetBoostComponent();
+			if (boost.IsNull()) carData["boost"] = -1;
+			else carData["boost"] = (int) (boost.GetCurrentBoostAmount() * 100);
+
+			payload["cars"][player.GetTeamNum()][playerUID + '_' + playerName] = carData;
+		}
+	}
+
+	SendSocketMessage(ENTITIES, payload);
+}
 
 void RLTM::ResetDatas()
 {
