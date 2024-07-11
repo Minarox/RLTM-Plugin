@@ -70,7 +70,7 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void OnStatTickerMessage(ServerWrapper server, void* params);
 	void OnStatEvent(ServerWrapper server, void* params);
 	void GetPlayerStatData(PriWrapper player, StatEventWrapper event, ServerWrapper server);
-	//void GetEntitiesData();
+	void GetEntitiesData();
 	void ResetDatas();
 
 	// Game HUD
