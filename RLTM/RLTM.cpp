@@ -55,7 +55,8 @@ void RLTM::HookEvents()
 	gameWrapper->HookEvent("Function Engine.WorldInfo.EventPauseChanged", std::bind(&RLTM::GetMatchData, this, std::placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded", std::bind(&RLTM::GetMatchData, this, std::placeholders::_1));
 
-	//gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", std::bind(&RLTM::GetPlayerStatData, this, std::placeholders::_1, std::placeholders::_2));
+	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", std::bind(&RLTM::OnStatTickerMessage, this, std::placeholders::_1, std::placeholders::_2));
+	//gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent", std::bind(&RLTM::OnStatEvent, this, std::placeholders::_1, std::placeholders::_2));
 
 	//gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", std::bing(&RLTM::GetEntitiesData, this));
 
@@ -87,6 +88,7 @@ void RLTM::UnhookEvents()
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded");
 
 	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatTickerMessage");
+	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatEvent");
 
 	//gameWrapper->UnhookEventPost("Function Engine.GameViewportClient.Tick");
 
@@ -196,7 +198,7 @@ void RLTM::GetMatchData(std::string caller)
 
 	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == 1) return;
 
-	json payload;
+	json payload = json::object();
 	payload["map"] = gameWrapper->GetCurrentMap();
 	payload["score"] = GetScore(server);
 	payload["duration"] = server.GetGameTime();
@@ -212,7 +214,7 @@ void RLTM::GetMatchData(std::string caller)
 
 	SendSocketMessage(MATCH, payload);
 
-	//GetStatisticsData(server);
+	GetStatisticsData(server);
 }
 
 std::array<int, 2> RLTM::GetScore(ServerWrapper server)
@@ -242,11 +244,7 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 	{
 		if (player.IsNull() || player.GetTeamNum() == 255) continue;
 
-		std::string playerName = player.GetPlayerName().ToString();
-		std::string playerUID = player.GetUniqueIdWrapper().GetIdString();
-		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
-
-		json playerData;
+		json playerData = json::object();
 		playerData["mvp"] = (bool) player.GetbMatchMVP();
 		playerData["score"] = player.GetMatchScore();
 		playerData["goals"] = player.GetMatchGoals();
@@ -256,16 +254,20 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 		playerData["ballTouches"] = player.GetBallTouches();
 		playerData["carTouches"] = player.GetCarTouches();
 
-		for (std::string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
-			playerData[event] = 0;
+		std::string playerName = player.GetPlayerName().ToString();
+		std::string playerUID = player.GetUniqueIdWrapper().GetIdString();
+		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
 
-		payload[player.GetTeamNum()][playerUID + '_' + playerName].push_back(playerData);
+		for (std::string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
+			playerData[event] = !data[event].is_null() ? (int) data[event] : 0;
+
+		payload[player.GetTeamNum()][playerUID + '_' + playerName] = playerData;
 	}
 
 	SendSocketMessage(STATISTICS, payload);
 }
 
-void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
+void RLTM::OnStatTickerMessage(ServerWrapper _server, void* params)
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
@@ -273,23 +275,47 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	StatTickerParams* pStruct = (StatTickerParams*)params;
 	PriWrapper player = PriWrapper(pStruct->Receiver);
 	StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
+
+	if (tickBuffer == event.GetEventName())
+	{
+		tickBuffer = "";
+		return;
+	}
+	else tickBuffer = event.GetEventName();
+
+	GetPlayerStatData(player, event, server);
+}
+
+void RLTM::OnStatEvent(ServerWrapper _server, void* params)
+{
+	ServerWrapper server = GetServerWrapper();
+	if (!server) return;
+
+	StatEventParams* pStruct = (StatEventParams*)params;
+	PriWrapper player = PriWrapper(pStruct->PRI);
+	StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
+
+	GetPlayerStatData(player, event, server);
+}
+
+void RLTM::GetPlayerStatData(PriWrapper player, StatEventWrapper event, ServerWrapper server)
+{
 	if (player.IsNull() || event.IsNull()) return;
 
 	std::string playerName = player.GetPlayerName().ToString();
 	std::string playerUID = player.GetUniqueIdWrapper().GetIdString();
 	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
-	cvarManager->log("Stat event: " + event.GetEventName() + ", json: " + data.dump());
 
-	//if (!data[event.GetEventName()].is_null())
-		//oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
+	if (!data[event.GetEventName()].is_null())
+		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
 	json payload;
-	payload["name"] = playerName;
-	payload["uid"] = playerUID;
-	payload["eventName"] = event.GetEventName();
+	payload["player"] = playerUID + '_' + playerName;
+	payload["event"] = event.GetEventName();
 
 	SendSocketMessage(STATISTIC, payload);
 
+	GetStatisticsData(server);
 }
 
 //void RLTM::GetEntitiesData()
