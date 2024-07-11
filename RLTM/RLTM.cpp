@@ -334,7 +334,7 @@ void RLTM::GetEntitiesData()
 		int i = 0;
 		for (int index = 0; index < balls.Count(); index++)
 		{
-			auto ball = balls.Get(i);
+			BallWrapper ball = balls.Get(i);
 			if (ball.IsNull()) continue;
 
 			Vector location = ball.GetLocation();
@@ -342,12 +342,13 @@ void RLTM::GetEntitiesData()
 			Rotator rotation = ball.GetRotation();
 
 			json ballData;
-			ballData["id"] = i;
+			ballData["radius"] = ball.GetRadius();
+			ballData["visualRadius"] = ball.GetVisualRadius();
 			ballData["location"] = { location.X, location.Y, location.Z };
 			ballData["velocity"] = { velocity.X, velocity.Y, velocity.Z };
 			ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
 			
-			payload["balls"].push_back(ballData);
+			payload["balls"][i] = ballData;
 			i++;
 		}
 	}
