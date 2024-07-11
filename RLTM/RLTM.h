@@ -7,6 +7,8 @@
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 #include "bakkesmod/wrappers/GameObject/Stats/StatEventWrapper.h"
+
+#include <iomanip>
 #include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocket.h>
 #include <nlohmann/json.hpp>
@@ -64,6 +66,7 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 
 	// Game data
 	string tickBuffer;
+	float RoundNumber(float number, int precision = 2);
 	ServerWrapper GetServerWrapper();
 	void GetMatchData(string caller);
 	array<int, 2> GetScore(ServerWrapper server);
