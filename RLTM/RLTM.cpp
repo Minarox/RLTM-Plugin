@@ -58,7 +58,7 @@ void RLTM::HookEvents()
 	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&RLTM::OnStatTickerMessage, this, placeholders::_1, placeholders::_2));
 	//gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent", bind(&RLTM::OnStatEvent, this, placeholders::_1, placeholders::_2));
 
-	//gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
+	gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
 
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", bind(&RLTM::ResetDatas, this));
 
@@ -171,11 +171,6 @@ void RLTM::SendSocketMessage(Event event, json payload)
 /*
 	--- Game Data ---
 */
-
-float RLTM::RoundNumber(float number, int precision = 2)
-{
-	return cout << fixed << setprecision(precision) << number;
-}
 
 ServerWrapper RLTM::GetServerWrapper()
 {
@@ -347,11 +342,11 @@ void RLTM::GetEntitiesData()
 			Rotator rotation = ball.GetRotation();
 
 			json ballData = json::object();
-			ballData["radius"] = ball.GetRadius();
-			ballData["visualRadius"] = ball.GetVisualRadius();
-			ballData["location"] = { RoundNumber(location.X), RoundNumber(location.Y), RoundNumber(location.Z) };
-			ballData["velocity"] = { RoundNumber(velocity.X), RoundNumber(velocity.Y), RoundNumber(velocity.Z) };
-			ballData["rotation"] = { RoundNumber(rotation.Pitch), RoundNumber(rotation.Yaw), RoundNumber(rotation.Roll) };
+			ballData["radius"] = (int) ball.GetRadius();
+			ballData["visualRadius"] = (int) ball.GetVisualRadius();
+			ballData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
+			ballData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
+			ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
 			
 			payload["balls"][i] = ballData;
 			i++;
@@ -376,10 +371,10 @@ void RLTM::GetEntitiesData()
 			Rotator rotation = car.GetRotation();
 
 			json carData = json::object();
-			carData["speed"] = RoundNumber((car.GetVelocity().magnitude() * 0.036f) + 0.5f);
-			carData["location"] = { RoundNumber(location.X), RoundNumber(location.Y), RoundNumber(location.Z) };
-			carData["velocity"] = { RoundNumber(velocity.X), RoundNumber(velocity.Y), RoundNumber(velocity.Z) };
-			carData["rotation"] = { RoundNumber(rotation.Pitch), RoundNumber(rotation.Yaw), RoundNumber(rotation.Roll) };
+			carData["speed"] = (int) ((car.GetVelocity().magnitude() * 0.036f) + 0.5f);
+			carData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
+			carData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
+			carData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
 			carData["isSuperSonic"] = (bool) car.GetbSuperSonic();
 			carData["isOnWall"] = car.IsOnWall();
 			carData["isOnGround"] = car.IsOnGround();
@@ -400,7 +395,7 @@ void RLTM::GetEntitiesData()
 
 void RLTM::ResetDatas()
 {
-	for (Event event : { MATCH, STATISTICS })
+	for (Event event : { MATCH, STATISTICS, ENTITIES })
 		SendSocketMessage(event, {});
 }
 
