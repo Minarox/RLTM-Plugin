@@ -15,6 +15,7 @@
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 using json = nlohmann::json;
+using namespace std;
 
 enum Event
 {
@@ -24,7 +25,7 @@ enum Event
 	ENTITIES
 };
 
-std::map<Event, std::string> eventToTopic = {
+map<Event, string> eventToTopic = {
 	{ MATCH, "match" },
 	{ STATISTICS, "statistics" },
 	{ STATISTIC, "statistic" },
@@ -62,10 +63,10 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void SendSocketMessage(Event event, json payload);
 
 	// Game data
-	std::string tickBuffer;
+	string tickBuffer;
 	ServerWrapper GetServerWrapper();
-	void GetMatchData(std::string caller);
-	std::array<int, 2> GetScore(ServerWrapper server);
+	void GetMatchData(string caller);
+	array<int, 2> GetScore(ServerWrapper server);
 	void GetStatisticsData(ServerWrapper server);
 	void OnStatTickerMessage(ServerWrapper server, void* params);
 	void OnStatEvent(ServerWrapper server, void* params);
