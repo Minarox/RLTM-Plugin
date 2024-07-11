@@ -6,6 +6,7 @@
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
+#include "bakkesmod/wrappers/GameObject/Stats/StatEventWrapper.h"
 #include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocket.h>
 #include <nlohmann/json.hpp>
@@ -37,6 +38,12 @@ struct StatTickerParams
 	uintptr_t StatEvent;
 };
 
+struct StatEventParams
+{
+	uintptr_t PRI;
+	uintptr_t StatEvent;
+};
+
 class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
 	// Boilerplate
@@ -55,11 +62,14 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void SendSocketMessage(Event event, json payload);
 
 	// Game data
+	std::string tickBuffer;
 	ServerWrapper GetServerWrapper();
 	void GetMatchData(std::string caller);
 	std::array<int, 2> GetScore(ServerWrapper server);
 	void GetStatisticsData(ServerWrapper server);
-	void GetPlayerStatData(ServerWrapper server, void* params);
+	void OnStatTickerMessage(ServerWrapper server, void* params);
+	void OnStatEvent(ServerWrapper server, void* params);
+	void GetPlayerStatData(PriWrapper player, StatEventWrapper event, ServerWrapper server);
 	//void GetEntitiesData();
 	void ResetDatas();
 
