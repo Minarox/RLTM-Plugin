@@ -128,7 +128,7 @@ void RLTM::InitSocket()
 				cvarManager->log("Socket connected");
 				for (auto& [key, value] : oldData.items())
 				{
-					json data;
+					json data = json::object();
 					data["topic"] = key;
 					data["payload"] = value;
 
@@ -156,7 +156,7 @@ void RLTM::SendSocketMessage(Event event, json payload)
 {
 	string topic = eventToTopic[event];
 
-	json data;
+	json data = json::object();
 	data["topic"] = topic;
 	data["payload"] = payload;
 
@@ -171,6 +171,11 @@ void RLTM::SendSocketMessage(Event event, json payload)
 /*
 	--- Game Data ---
 */
+
+float RLTM::RoundNumber(float number, int precision = 2)
+{
+	return cout << fixed << setprecision(precision) << number;
+}
 
 ServerWrapper RLTM::GetServerWrapper()
 {
@@ -309,7 +314,7 @@ void RLTM::GetPlayerStatData(PriWrapper player, StatEventWrapper event, ServerWr
 	if (!data[event.GetEventName()].is_null())
 		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
-	json payload;
+	json payload = json::object();
 	payload["player"] = playerUID + '_' + playerName;
 	payload["event"] = event.GetEventName();
 
@@ -324,7 +329,7 @@ void RLTM::GetEntitiesData()
 	if (!server) return;
 	if (oldData[eventToTopic[MATCH]]["isStarted"] == 0 || server.GetbMatchEnded() || oldData[eventToTopic[MATCH]]["IsPaused"] == 1) return;
 
-	json payload;
+	json payload = json::object();
 	payload["balls"] = json::array();
 	payload["cars"] = json::array();
 
@@ -341,12 +346,12 @@ void RLTM::GetEntitiesData()
 			Vector velocity = ball.GetVelocity();
 			Rotator rotation = ball.GetRotation();
 
-			json ballData;
+			json ballData = json::object();
 			ballData["radius"] = ball.GetRadius();
 			ballData["visualRadius"] = ball.GetVisualRadius();
-			ballData["location"] = { location.X, location.Y, location.Z };
-			ballData["velocity"] = { velocity.X, velocity.Y, velocity.Z };
-			ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
+			ballData["location"] = { RoundNumber(location.X), RoundNumber(location.Y), RoundNumber(location.Z) };
+			ballData["velocity"] = { RoundNumber(velocity.X), RoundNumber(velocity.Y), RoundNumber(velocity.Z) };
+			ballData["rotation"] = { RoundNumber(rotation.Pitch), RoundNumber(rotation.Yaw), RoundNumber(rotation.Roll) };
 			
 			payload["balls"][i] = ballData;
 			i++;
@@ -370,11 +375,11 @@ void RLTM::GetEntitiesData()
 			Vector velocity = car.GetVelocity();
 			Rotator rotation = car.GetRotation();
 
-			json carData;
-			carData["speed"] = floor(((car.GetVelocity().magnitude() * 0.036f) + 0.5f) / 0.1 + 0.5) * 0.1;
-			carData["location"] = { location.X, location.Y, location.Z };
-			carData["velocity"] = { velocity.X, velocity.Y, velocity.Z };
-			carData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
+			json carData = json::object();
+			carData["speed"] = RoundNumber((car.GetVelocity().magnitude() * 0.036f) + 0.5f);
+			carData["location"] = { RoundNumber(location.X), RoundNumber(location.Y), RoundNumber(location.Z) };
+			carData["velocity"] = { RoundNumber(velocity.X), RoundNumber(velocity.Y), RoundNumber(velocity.Z) };
+			carData["rotation"] = { RoundNumber(rotation.Pitch), RoundNumber(rotation.Yaw), RoundNumber(rotation.Roll) };
 			carData["isSuperSonic"] = (bool) car.GetbSuperSonic();
 			carData["isOnWall"] = car.IsOnWall();
 			carData["isOnGround"] = car.IsOnGround();
