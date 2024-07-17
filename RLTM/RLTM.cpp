@@ -18,6 +18,7 @@ void RLTM::onLoad()
 	ix::initNetSystem();
 	HookEvents();
 	GetMatchData("onLoad");
+	SetReplayAutoSave(true);
 	InitSocket();
 
 	cvarManager->log("RLTM Plugin loaded");
@@ -26,6 +27,7 @@ void RLTM::onLoad()
 void RLTM::onUnload()
 {
 	UnhookEvents();
+	SetReplayAutoSave(false);
 	ResetDatas();
 	socket.stop();
 	ix::uninitNetSystem();
@@ -185,7 +187,7 @@ ServerWrapper RLTM::GetServerWrapper()
 			int playlistID = playlist.GetPlaylistId();
 			if (playlistID == 6) return onlineServer;
 		}
-	} 
+	}
 	if (!localServer.IsNull()) return localServer;
 	return NULL;
 }
@@ -347,7 +349,7 @@ void RLTM::GetEntitiesData()
 			ballData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
 			ballData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
 			ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
-			
+
 			payload["balls"][i] = ballData;
 			i++;
 		}
@@ -397,6 +399,15 @@ void RLTM::ResetDatas()
 {
 	for (Event event : { MATCH, STATISTICS, ENTITIES })
 		SendSocketMessage(event, {});
+}
+
+
+/*
+	--- Game Replays ---
+*/
+void RLTMPlugin::SetReplayAutoSave(bool status)
+{
+	cvarManager->executeCommand("ranked_autosavereplay_all " + std::to_string(status ? 1 : 0), false);
 }
 
 
