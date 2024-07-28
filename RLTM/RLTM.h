@@ -75,6 +75,9 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void GetEntitiesData();
 	void ResetDatas();
 
+	// Game Replays
+	void SetReplayAutoSave(bool status);
+
 	// Game HUD
 	void SetSpectatorUI(int sleep);
 	void SetStatGraph();

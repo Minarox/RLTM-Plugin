@@ -58,7 +58,7 @@ void RLTM::HookEvents()
 	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&RLTM::OnStatTickerMessage, this, placeholders::_1, placeholders::_2));
 	//gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent", bind(&RLTM::OnStatEvent, this, placeholders::_1, placeholders::_2));
 
-	gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
+	//gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
 
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", bind(&RLTM::ResetDatas, this));
 
@@ -113,7 +113,7 @@ void RLTM::InitSocket()
 {
 	if (socket.getReadyState() != ix::ReadyState::Closed) return;
 
-	socket.setUrl("ws://localhost:3000/game?token=1234");
+	socket.setUrl("ws://localhost:3000/game?token=457218CD39CB96BF59086E83C4D21AC6");
 	socket.setHandshakeTimeout(4);
 	socket.setPingInterval(2);
 	socket.enableAutomaticReconnection();
@@ -199,6 +199,7 @@ void RLTM::GetMatchData(string caller)
 	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == 1) return;
 
 	json payload = json::object();
+	payload["id"] = server.GetMatchGUID();
 	payload["map"] = gameWrapper->GetCurrentMap();
 	payload["score"] = GetScore(server);
 	payload["duration"] = server.GetGameTime();
@@ -215,6 +216,8 @@ void RLTM::GetMatchData(string caller)
 	SendSocketMessage(MATCH, payload);
 
 	GetStatisticsData(server);
+
+	if (payload["isEnded"] == 0 && payload["isStarted"] == 1) SetReplayAutoSave(true);
 }
 
 array<int, 2> RLTM::GetScore(ServerWrapper server)
@@ -395,8 +398,19 @@ void RLTM::GetEntitiesData()
 
 void RLTM::ResetDatas()
 {
+	SetReplayAutoSave(false);
+
 	for (Event event : { MATCH, STATISTICS, ENTITIES })
 		SendSocketMessage(event, {});
+}
+
+
+/*
+	--- Game Replays ---
+*/
+void RLTM::SetReplayAutoSave(bool status)
+{
+	cvarManager->executeCommand("ranked_autosavereplay_all " + to_string(status ? 1 : 0), false);
 }
 
 
