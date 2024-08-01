@@ -56,6 +56,7 @@ void RLTM::HookEvents()
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", bind(&RLTM::SetReplayState, this, false, placeholders::_1));
 
 	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&RLTM::OnStatTickerMessage, this, placeholders::_1, placeholders::_2));
+	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent", bind(&RLTM::OnStatEvent, this, placeholders::_1, placeholders::_2));
 
 	gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
 
@@ -87,6 +88,7 @@ void RLTM::UnhookEvents()
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState");
 
 	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatTickerMessage");
+	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatEvent");
 
 	gameWrapper->UnhookEventPost("Function Engine.GameViewportClient.Tick");
 
@@ -293,12 +295,16 @@ void RLTM::OnStatTickerMessage(ServerWrapper _server, void* params)
 	PriWrapper player = PriWrapper(pStruct->Receiver);
 	StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
 
-	if (tickBuffer == event.GetEventName())
+	string playerName = player.GetPlayerName().ToString();
+	string playerUID = player.GetUniqueIdWrapper().GetIdString();
+	string data = event.GetEventName() + '_' + playerUID + '_' + playerName;
+
+	if (tickBuffer == data)
 	{
 		tickBuffer = "";
 		return;
 	}
-	else tickBuffer = event.GetEventName();
+	else tickBuffer = data;
 
 	GetPlayerStatData(player, event, server);
 }
