@@ -40,8 +40,6 @@ void RLTM::onUnload()
 
 void RLTM::HookEvents()
 {
-	if (isHooked) return;
-
 	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.AddLocalPlayer", bind(&RLTM::GetMatchData, this, placeholders::_1));
@@ -49,16 +47,17 @@ void RLTM::HookEvents()
 	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.Team_TA.OnScoreUpdated", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function Engine.WorldInfo.EventPauseChanged", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded", bind(&RLTM::GetMatchData, this, placeholders::_1));
 
-	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&RLTM::OnStatTickerMessage, this, placeholders::_1, placeholders::_2));
-	//gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent", bind(&RLTM::OnStatEvent, this, placeholders::_1, placeholders::_2));
+	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", bind(&RLTM::SetReplayState, this, true, placeholders::_1));
+	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", bind(&RLTM::SetReplayState, this, false, placeholders::_1));
 
-	//gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
+	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&RLTM::OnStatTickerMessage, this, placeholders::_1, placeholders::_2));
+
+	gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
 
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", bind(&RLTM::ResetDatas, this));
 
@@ -68,8 +67,6 @@ void RLTM::HookEvents()
 	gameWrapper->HookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs", bind(&RLTM::SetStatGraph, this));
 
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay", bind(&RLTM::SetReady, this));
-
-	isHooked = true;
 }
 
 void RLTM::UnhookEvents()
@@ -81,14 +78,15 @@ void RLTM::UnhookEvents()
 	gameWrapper->UnhookEvent("Function GameEvent_TA.Countdown.BeginState");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit");
 	gameWrapper->UnhookEvent("Function TAGame.Team_TA.OnScoreUpdated");
-	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated");
 	gameWrapper->UnhookEvent("Function Engine.WorldInfo.EventPauseChanged");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded");
 
+	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState");
+	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState");
+
 	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatTickerMessage");
-	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatEvent");
 
 	gameWrapper->UnhookEventPost("Function Engine.GameViewportClient.Tick");
 
@@ -100,8 +98,6 @@ void RLTM::UnhookEvents()
 	gameWrapper->UnhookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs");
 
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay");
-
-	isHooked = false;
 }
 
 
@@ -160,7 +156,7 @@ void RLTM::SendSocketMessage(Event event, json payload)
 	data["topic"] = topic;
 	data["payload"] = payload;
 
-	if (data["payload"].dump() == oldData[topic].dump()) return;
+	if (data["payload"] == oldData[topic]) return;
 	if (topic != eventToTopic[STATISTIC]) oldData[topic] = data["payload"];
 
 	if (socket.getReadyState() != ix::ReadyState::Open) return;
@@ -190,13 +186,20 @@ ServerWrapper RLTM::GetServerWrapper()
 	return NULL;
 }
 
+void RLTM::SetReplayState(bool state, string caller)
+{
+	if (isReplay == state) return;
+	isReplay = state;
+	GetMatchData(caller);
+}
+
 void RLTM::GetMatchData(string caller)
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server && caller == "onLoad") ResetDatas();
 	if (!server) return;
 
-	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == 1) return;
+	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == true) return;
 
 	json payload = json::object();
 	payload["id"] = server.GetMatchGUID();
@@ -204,11 +207,11 @@ void RLTM::GetMatchData(string caller)
 	payload["score"] = GetScore(server);
 	payload["duration"] = server.GetGameTime();
 	payload["isUnlimited"] = (bool) server.GetbUnlimitedTime();
-	payload["isStarted"] = oldData[eventToTopic[MATCH]]["isStarted"] == 1 || server.GetbBallHasBeenHit() || caller == "Function GameEvent_TA.Countdown.BeginState";
+	payload["isStarted"] = oldData[eventToTopic[MATCH]]["isStarted"] == true || server.GetbBallHasBeenHit() || caller == "Function GameEvent_TA.Countdown.BeginState";
 	payload["isPaused"] = gameWrapper->IsPaused() && !server.GetbMatchEnded();
 	payload["isOvertime"] = (bool) server.GetbOverTime();
 	payload["isEnded"] = (bool) server.GetbMatchEnded();
-	payload["isReplay"] = payload["isStarted"] == 1 && !server.GetbRoundActive() && !server.GetbMatchEnded() && caller != "Function GameEvent_TA.Countdown.BeginState" && (!server.GetbOverTime() || server.GetbOverTime() && server.GetSecondsRemaining() != 0);
+	payload["isReplay"] = isReplay;
 
 	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["time"];
 	else payload["time"] = server.GetSecondsRemaining();
@@ -217,7 +220,18 @@ void RLTM::GetMatchData(string caller)
 
 	GetStatisticsData(server);
 
-	if (payload["isEnded"] == 0 && payload["isStarted"] == 1) SetReplayAutoSave(true);
+	if (payload["isStarted"] == true && payload["isPaused"] == false && payload["isEnded"] == false)
+	{
+		SetReplayAutoSave(true);
+
+		if (!threadRunning)
+		{
+			threadRunning = true;
+			thread asyncThread(&RLTM::SendEntitiesData, this);
+			asyncThread.detach();
+		}
+	}
+	else threadRunning = false;
 }
 
 array<int, 2> RLTM::GetScore(ServerWrapper server)
@@ -325,7 +339,7 @@ void RLTM::GetEntitiesData()
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
-	if (oldData[eventToTopic[MATCH]]["isStarted"] == 0 || server.GetbMatchEnded() || oldData[eventToTopic[MATCH]]["IsPaused"] == 1) return;
+	if (oldData[eventToTopic[MATCH]]["isStarted"] == false || server.GetbMatchEnded() || oldData[eventToTopic[MATCH]]["isPaused"] == true) return;
 
 	json payload = json::object();
 	payload["balls"] = json::array();
@@ -350,7 +364,7 @@ void RLTM::GetEntitiesData()
 			ballData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
 			ballData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
 			ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
-			
+
 			payload["balls"][i] = ballData;
 			i++;
 		}
@@ -393,12 +407,23 @@ void RLTM::GetEntitiesData()
 		}
 	}
 
-	SendSocketMessage(ENTITIES, payload);
+	entitiesData = payload;
+}
+
+void RLTM::SendEntitiesData()
+{
+	while (threadRunning)
+	{
+		SendSocketMessage(ENTITIES, entitiesData);
+		this_thread::sleep_for(chrono::milliseconds(100));
+	}
 }
 
 void RLTM::ResetDatas()
 {
 	SetReplayAutoSave(false);
+	threadRunning = false;
+	isReplay = false;
 
 	for (Event event : { MATCH, STATISTICS, ENTITIES })
 		SendSocketMessage(event, {});
@@ -410,6 +435,8 @@ void RLTM::ResetDatas()
 */
 void RLTM::SetReplayAutoSave(bool status)
 {
+	if (autoSaveReplay == status) return;
+	autoSaveReplay = status;
 	cvarManager->executeCommand("ranked_autosavereplay_all " + to_string(status ? 1 : 0), false);
 }
 
@@ -428,7 +455,10 @@ void RLTM::SetSpectatorUI(int sleep)
 
 	PriWrapper player = primaryPlayer.GetPRI();
 	if (!player.IsNull() && player.IsSpectator())
-		cvarManager->executeCommand("sleep " + to_string(sleep) + "; replay_gui hud 1; replay_gui names 1; replay_gui matchinfo 1; sleep 16; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
+	{
+		//cvarManager->executeCommand("sleep " + to_string(sleep) + "; replay_gui hud 1; replay_gui names 1; replay_gui matchinfo 1; sleep 16; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
+		cvarManager->executeCommand("sleep " + to_string(sleep) + "; sleep 16; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
+	}
 }
 
 void RLTM::SetStatGraph()

@@ -12,6 +12,9 @@
 #include <ixwebsocket/IXWebSocket.h>
 #include <nlohmann/json.hpp>
 
+#include <thread>
+#include <chrono>
+
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
@@ -53,7 +56,6 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	virtual void onUnload();
 
 	// Hooks
-	bool isHooked = false;
 	void HookEvents();
 	void UnhookEvents();
 
@@ -65,7 +67,11 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 
 	// Game data
 	string tickBuffer;
+	bool isReplay = false;
+	bool threadRunning = false;
+	json entitiesData;
 	ServerWrapper GetServerWrapper();
+	void SetReplayState(bool state, string caller);
 	void GetMatchData(string caller);
 	array<int, 2> GetScore(ServerWrapper server);
 	void GetStatisticsData(ServerWrapper server);
@@ -73,9 +79,11 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void OnStatEvent(ServerWrapper server, void* params);
 	void GetPlayerStatData(PriWrapper player, StatEventWrapper event, ServerWrapper server);
 	void GetEntitiesData();
+	void SendEntitiesData();
 	void ResetDatas();
 
 	// Game Replays
+	bool autoSaveReplay = false;
 	void SetReplayAutoSave(bool status);
 
 	// Game HUD
