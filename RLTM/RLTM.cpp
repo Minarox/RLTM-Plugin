@@ -115,6 +115,8 @@ void RLTM::InitSocket()
 	socket.enableAutomaticReconnection();
 	socket.setMinWaitBetweenReconnectionRetries(1000);
 	socket.setMaxWaitBetweenReconnectionRetries(5000);
+	socket.enablePerMessageDeflate();
+	socket.addSubProtocol("json");
 
 	socket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg)
 		{
