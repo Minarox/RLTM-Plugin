@@ -66,18 +66,16 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void SendSocketMessage(Event event, json payload);
 
 	// Game data
-	string tickBuffer;
+	string tickBuffer = "";
 	bool isReplay = false;
 	bool threadRunning = false;
-	json entitiesData;
+	json entitiesData = json::object();
 	ServerWrapper GetServerWrapper();
 	void SetReplayState(bool state, string caller);
 	void GetMatchData(string caller);
 	array<int, 2> GetScore(ServerWrapper server);
 	void GetStatisticsData(ServerWrapper server);
-	void OnStatTickerMessage(ServerWrapper server, void* params);
-	void OnStatEvent(ServerWrapper server, void* params);
-	void GetPlayerStatData(PriWrapper player, StatEventWrapper event, ServerWrapper server);
+	void GetPlayerStatData(ServerWrapper _server, void* params);
 	void GetEntitiesData();
 	void SendEntitiesData();
 	void ResetDatas();
