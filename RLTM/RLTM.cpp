@@ -55,8 +55,7 @@ void RLTM::HookEvents()
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", bind(&RLTM::SetReplayState, this, true, placeholders::_1));
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", bind(&RLTM::SetReplayState, this, false, placeholders::_1));
 
-	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&RLTM::OnStatTickerMessage, this, placeholders::_1, placeholders::_2));
-	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatEvent", bind(&RLTM::OnStatEvent, this, placeholders::_1, placeholders::_2));
+	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&RLTM::GetPlayerStatData, this, placeholders::_1, placeholders::_2));
 
 	gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
 
@@ -88,7 +87,6 @@ void RLTM::UnhookEvents()
 	gameWrapper->UnhookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState");
 
 	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatTickerMessage");
-	gameWrapper->UnhookEventPost("Function TAGame.GFxHUD_TA.HandleStatEvent");
 
 	gameWrapper->UnhookEventPost("Function Engine.GameViewportClient.Tick");
 
@@ -286,7 +284,7 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 	SendSocketMessage(STATISTICS, payload);
 }
 
-void RLTM::OnStatTickerMessage(ServerWrapper _server, void* params)
+void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
@@ -295,40 +293,20 @@ void RLTM::OnStatTickerMessage(ServerWrapper _server, void* params)
 	PriWrapper player = PriWrapper(pStruct->Receiver);
 	StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
 
-	string playerName = player.GetPlayerName().ToString();
-	string playerUID = player.GetUniqueIdWrapper().GetIdString();
-	string data = event.GetEventName() + '_' + playerUID + '_' + playerName;
-
-	if (tickBuffer == data)
-	{
-		tickBuffer = "";
-		return;
-	}
-	else tickBuffer = data;
-
-	GetPlayerStatData(player, event, server);
-}
-
-void RLTM::OnStatEvent(ServerWrapper _server, void* params)
-{
-	ServerWrapper server = GetServerWrapper();
-	if (!server) return;
-
-	StatEventParams* pStruct = (StatEventParams*)params;
-	PriWrapper player = PriWrapper(pStruct->PRI);
-	StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
-
-	GetPlayerStatData(player, event, server);
-}
-
-void RLTM::GetPlayerStatData(PriWrapper player, StatEventWrapper event, ServerWrapper server)
-{
 	if (player.IsNull() || event.IsNull()) return;
 
 	string playerName = player.GetPlayerName().ToString();
 	string playerUID = player.GetUniqueIdWrapper().GetIdString();
-	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
+	string tick = event.GetEventName() + '_' + playerUID + '_' + playerName;
 
+	if (tickBuffer == tick)
+	{
+		tickBuffer = "";
+		return;
+	}
+	else tickBuffer = tick;
+
+	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
 	if (!data[event.GetEventName()].is_null())
 		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
