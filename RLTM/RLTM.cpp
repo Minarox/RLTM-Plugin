@@ -345,11 +345,11 @@ void RLTM::GetEntitiesData()
 			Rotator rotation = ball.GetRotation();
 
 			json ballData = json::object();
-			ballData["radius"] = (int) ball.GetRadius();
-			ballData["visualRadius"] = (int) ball.GetVisualRadius();
+			//ballData["radius"] = (int) ball.GetRadius();
+			//ballData["visualRadius"] = (int) ball.GetVisualRadius();
 			ballData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
-			ballData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
-			ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
+			//ballData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
+			//ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
 
 			payload["balls"][i] = ballData;
 			i++;
@@ -376,8 +376,8 @@ void RLTM::GetEntitiesData()
 			json carData = json::object();
 			carData["speed"] = (int) ((car.GetVelocity().magnitude() * 0.036f) + 0.5f);
 			carData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
-			carData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
-			carData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
+			//carData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
+			//carData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
 			carData["isSuperSonic"] = (bool) car.GetbSuperSonic();
 			carData["isOnWall"] = car.IsOnWall();
 			carData["isOnGround"] = car.IsOnGround();
