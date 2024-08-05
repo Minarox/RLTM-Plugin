@@ -109,7 +109,7 @@ void RLTM::InitSocket()
 {
 	if (socket.getReadyState() != ix::ReadyState::Closed) return;
 
-	socket.setUrl("ws://localhost:3000/game?token=457218CD39CB96BF59086E83C4D21AC6");
+	socket.setUrl("ws://localhost:3000?token=457218CD39CB96BF59086E83C4D21AC6");
 	socket.setHandshakeTimeout(4);
 	socket.setPingInterval(2);
 	socket.enableAutomaticReconnection();
