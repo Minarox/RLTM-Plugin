@@ -1,3 +1,6 @@
+#ifndef RLTM
+#define RLTM
+
 #pragma once
 #pragma comment (lib, "pluginsdk.lib")
 #pragma comment (lib, "ws2_32.lib")
@@ -51,21 +54,7 @@ struct StatEventParams
 
 class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
-	// Boilerplate
-	virtual void onLoad();
-	virtual void onUnload();
-
-	// Hooks
-	void HookEvents();
-	void UnhookEvents();
-
-	// WebSocket
-	ix::WebSocket socket;
-	json oldData;
-	void InitSocket();
-	void SendSocketMessage(Event event, json payload);
-
-	// Game data
+	// Data
 	string tickBuffer = "";
 	bool isReplay = false;
 	bool threadRunning = false;
@@ -80,12 +69,25 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void SendEntitiesData();
 	void ResetDatas();
 
-	// Game Replays
-	bool autoSaveReplay = false;
-	void SetReplayAutoSave(bool status);
+	// Hook
+	void HookEvents();
+	void UnhookEvents();
+	virtual void onLoad();
+	virtual void onUnload();
 
-	// Game HUD
+    // HUD
 	void SetSpectatorUI(int sleep);
 	void SetStatGraph();
 	void SetReady();
+
+	// Replay
+	bool autoSaveReplay = false;
+	void SetReplayAutoSave(bool status);
+
+	// Socket
+	ix::WebSocket socket;
+	json oldData;
+	void InitSocket();
+	void StopSocket();
+	void SendSocketMessage(Event event, json payload);
 };
