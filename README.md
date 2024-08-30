@@ -51,7 +51,8 @@ BakkesMod plugin to fetch and send real time data from Rocket League to the [RLT
 
 ### Tech Stack
 
-- [socket.io-client-cpp](https://github.com/socketio/socket.io-client-cpp)
+- [BakkesModSDK](https://github.com/bakkesmodorg/BakkesModSDK)
+- [IXWebSocket](https://github.com/machinezone/IXWebSocket)
 - [nlohmann/json](https://github.com/nlohmann/json)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
