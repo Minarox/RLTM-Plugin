@@ -114,7 +114,7 @@ void RLTM::InitSocket()
 	socket.setPingInterval(2);
 	socket.enableAutomaticReconnection();
 	socket.setMinWaitBetweenReconnectionRetries(1000);
-	socket.setMaxWaitBetweenReconnectionRetries(5000);
+	socket.setMaxWaitBetweenReconnectionRetries(1000);
 	socket.enablePerMessageDeflate();
 	socket.addSubProtocol("json");
 
