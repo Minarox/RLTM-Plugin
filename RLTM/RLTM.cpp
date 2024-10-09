@@ -40,8 +40,9 @@ void RLTM::onUnload()
 
 void RLTM::HookEvents()
 {
-	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved", bind(&RLTM::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded", bind(&RLTM::GetPlayersData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved", bind(&RLTM::GetPlayersData, this, placeholders::_1));
+
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.AddLocalPlayer", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.PRI_TA.OnTeamChanged", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", bind(&RLTM::GetMatchData, this, placeholders::_1));
@@ -73,6 +74,7 @@ void RLTM::UnhookEvents()
 {
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved");
+
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.AddLocalPlayer");
 	gameWrapper->UnhookEvent("Function TAGame.PRI_TA.OnTeamChanged");
 	gameWrapper->UnhookEvent("Function GameEvent_TA.Countdown.BeginState");
@@ -183,7 +185,7 @@ ServerWrapper RLTM::GetServerWrapper()
 			int playlistID = playlist.GetPlaylistId();
 			if (playlistID == 6) return onlineServer;
 		}
-	} 
+	}
 	if (!localServer.IsNull()) return localServer;
 	return NULL;
 }
@@ -193,6 +195,40 @@ void RLTM::SetReplayState(bool state, string caller)
 	if (isReplay == state) return;
 	isReplay = state;
 	GetMatchData(caller);
+}
+
+void RLTM::GetPlayersData(string caller)
+{
+	GetMatchData(caller);
+
+	ServerWrapper server = GetServerWrapper();
+	if (!server) return;
+
+	ArrayWrapper<PriWrapper> players = server.GetPRIs();
+	if (players.IsNull()) return;
+
+	json payload = json::array();
+	for (PriWrapper player : players)
+	{
+		if (player.IsNull() || player.GetTeamNum() == 255) continue;
+
+		CarWrapper car = player.GetCar();
+		if (car.IsNull()) continue;
+
+		std::string plateform = player.GetUniqueIdWrapper().GetIdString();
+
+		json playerData = json::object();
+		playerData["name"] = player.GetPlayerName().ToString();
+		playerData["uid"] = player.GetUniqueIdWrapper().GetUID();
+		playerData["plateform"] = plateform.substr(0, plateform.find('|'));
+		playerData["screenId"] = player.GetUniqueIdWrapper().GetSplitscreenID();
+		playerData["bot"] = (bool)player.GetbBot();
+		playerData["carId"] = car.GetLoadoutBody();
+
+		payload.push_back(playerData);
+	}
+
+	SendSocketMessage(PLAYERS, payload);
 }
 
 void RLTM::GetMatchData(string caller)
