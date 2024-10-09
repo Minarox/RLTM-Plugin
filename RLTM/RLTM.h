@@ -33,7 +33,8 @@ map<Event, string> eventToTopic = {
 	{ MATCH, "match" },
 	{ STATISTICS, "statistics" },
 	{ STATISTIC, "statistic" },
-	{ ENTITIES, "entities" }
+	{ ENTITIES, "entities" },
+	{ PLAYERS, "players" }
 };
 
 struct StatTickerParams
@@ -72,6 +73,7 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	json entitiesData = json::object();
 	ServerWrapper GetServerWrapper();
 	void SetReplayState(bool state, string caller);
+	void GetPlayersData(string caller);
 	void GetMatchData(string caller);
 	array<int, 2> GetScore(ServerWrapper server);
 	void GetStatisticsData(ServerWrapper server);
