@@ -109,7 +109,7 @@ void RLTM::InitSocket()
 {
 	if (socket.getReadyState() != ix::ReadyState::Closed) return;
 
-	socket.setUrl("ws://localhost:3000?token=457218CD39CB96BF59086E83C4D21AC6");
+	socket.setUrl("ws://localhost:3300?token=");
 	socket.setHandshakeTimeout(4);
 	socket.setPingInterval(2);
 	socket.enableAutomaticReconnection();
@@ -218,13 +218,13 @@ void RLTM::GetMatchData(string caller)
 	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["time"];
 	else payload["time"] = server.GetSecondsRemaining();
 
+	SendSocketMessage(MATCH, payload);
+
+	GetStatisticsData(server);
+
 	if (payload["isStarted"] == true && payload["isPaused"] == false && payload["isEnded"] == false)
 	{
 		SetReplayAutoSave(true);
-
-		if (caller == "Function GameEvent_TA.Countdown.BeginState" || caller == "Function TAGame.GameEvent_TA.EventPlayerAdded" || caller == "Function TAGame.GameEvent_TA.EventPlayerRemoved") {
-			GetPlayersData(server);
-		}
 
 		if (!threadRunning)
 		{
@@ -234,10 +234,6 @@ void RLTM::GetMatchData(string caller)
 		}
 	}
 	else threadRunning = false;
-
-	SendSocketMessage(MATCH, payload);
-
-	GetStatisticsData(server);
 }
 
 array<int, 2> RLTM::GetScore(ServerWrapper server)
@@ -257,35 +253,6 @@ array<int, 2> RLTM::GetScore(ServerWrapper server)
 	return json::array();
 }
 
-void RLTM::GetPlayersData(ServerWrapper server)
-{
-	ArrayWrapper<PriWrapper> players = server.GetPRIs();
-	if (players.IsNull()) return;
-
-	json payload = json::array();
-	for (PriWrapper player : players)
-	{
-		if (player.IsNull() || player.GetTeamNum() == 255) continue;
-
-		CarWrapper car = player.GetCar();
-		if (car.IsNull()) continue;
-
-		std::string plateform = player.GetUniqueIdWrapper().GetIdString();
-
-		json playerData = json::object();
-		playerData["name"] = player.GetPlayerName().ToString();
-		playerData["uid"] = player.GetUniqueIdWrapper().GetUID();
-		playerData["plateform"] = plateform.substr(0, plateform.find('|'));
-		playerData["screenId"] = player.GetUniqueIdWrapper().GetSplitscreenID();
-		playerData["bot"] = (bool)player.GetbBot();
-		playerData["carId"] = car.GetLoadoutBody();
-
-		payload.push_back(playerData);
-	}
-
-	SendSocketMessage(PLAYERS, payload);
-}
-
 void RLTM::GetStatisticsData(ServerWrapper server)
 {
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
@@ -296,7 +263,19 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 	{
 		if (player.IsNull() || player.GetTeamNum() == 255) continue;
 
+		CarWrapper car = player.GetCar();
+		if (car.IsNull()) continue;
+		
+		string playerName = player.GetPlayerName().ToString();
+		string playerUID = player.GetUniqueIdWrapper().GetIdString();
+
 		json playerData = json::object();
+		
+		playerData["name"] = playerName;
+		playerData["uid"] = playerUID;
+		playerData["bot"] = (bool)player.GetbBot();
+		playerData["carId"] = car.GetLoadoutBody();
+
 		playerData["mvp"] = (bool) player.GetbMatchMVP();
 		playerData["score"] = player.GetMatchScore();
 		playerData["goals"] = player.GetMatchGoals();
@@ -306,8 +285,6 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 		playerData["ballTouches"] = player.GetBallTouches();
 		playerData["carTouches"] = player.GetCarTouches();
 
-		string playerName = player.GetPlayerName().ToString();
-		string playerUID = player.GetUniqueIdWrapper().GetIdString();
 		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName];
 
 		for (string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
