@@ -26,16 +26,14 @@ enum Event
 	MATCH,
 	STATISTICS,
 	STATISTIC,
-	ENTITIES,
-	PLAYERS
+	ENTITIES
 };
 
 map<Event, string> eventToTopic = {
 	{ MATCH, "match" },
 	{ STATISTICS, "statistics" },
 	{ STATISTIC, "statistic" },
-	{ ENTITIES, "entities" },
-	{ PLAYERS, "players" }
+	{ ENTITIES, "entities" }
 };
 
 struct StatTickerParams
@@ -76,7 +74,6 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void SetReplayState(bool state, string caller);
 	void GetMatchData(string caller);
 	array<int, 2> GetScore(ServerWrapper server);
-	void GetPlayersData(ServerWrapper server);
 	void GetStatisticsData(ServerWrapper server);
 	void GetPlayerStatData(ServerWrapper _server, void* params);
 	void GetEntitiesData();
