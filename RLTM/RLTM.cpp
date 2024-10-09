@@ -40,9 +40,8 @@ void RLTM::onUnload()
 
 void RLTM::HookEvents()
 {
-	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded", bind(&RLTM::GetPlayersData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved", bind(&RLTM::GetPlayersData, this, placeholders::_1));
-
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded", bind(&RLTM::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.AddLocalPlayer", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function TAGame.PRI_TA.OnTeamChanged", bind(&RLTM::GetMatchData, this, placeholders::_1));
 	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", bind(&RLTM::GetMatchData, this, placeholders::_1));
@@ -74,7 +73,6 @@ void RLTM::UnhookEvents()
 {
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved");
-
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.AddLocalPlayer");
 	gameWrapper->UnhookEvent("Function TAGame.PRI_TA.OnTeamChanged");
 	gameWrapper->UnhookEvent("Function GameEvent_TA.Countdown.BeginState");
@@ -197,13 +195,70 @@ void RLTM::SetReplayState(bool state, string caller)
 	GetMatchData(caller);
 }
 
-void RLTM::GetPlayersData(string caller)
+void RLTM::GetMatchData(string caller)
 {
-	GetMatchData(caller);
-
 	ServerWrapper server = GetServerWrapper();
+	if (!server && caller == "onLoad") ResetDatas();
 	if (!server) return;
 
+	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == true) return;
+
+	json payload = json::object();
+	payload["id"] = server.GetMatchGUID();
+	payload["map"] = gameWrapper->GetCurrentMap();
+	payload["score"] = GetScore(server);
+	payload["duration"] = server.GetGameTime();
+	payload["isUnlimited"] = (bool) server.GetbUnlimitedTime();
+	payload["isStarted"] = oldData[eventToTopic[MATCH]]["isStarted"] == true || server.GetbBallHasBeenHit() || caller == "Function GameEvent_TA.Countdown.BeginState";
+	payload["isPaused"] = gameWrapper->IsPaused() && !server.GetbMatchEnded();
+	payload["isOvertime"] = (bool) server.GetbOverTime();
+	payload["isEnded"] = (bool) server.GetbMatchEnded();
+	payload["isReplay"] = isReplay;
+
+	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["time"];
+	else payload["time"] = server.GetSecondsRemaining();
+
+	if (payload["isStarted"] == true && payload["isPaused"] == false && payload["isEnded"] == false)
+	{
+		SetReplayAutoSave(true);
+
+		if (caller == "Function GameEvent_TA.Countdown.BeginState" || caller == "Function TAGame.GameEvent_TA.EventPlayerAdded" || caller == "Function TAGame.GameEvent_TA.EventPlayerRemoved") {
+			GetPlayersData(server);
+		}
+
+		if (!threadRunning)
+		{
+			threadRunning = true;
+			thread asyncThread(&RLTM::SendEntitiesData, this);
+			asyncThread.detach();
+		}
+	}
+	else threadRunning = false;
+
+	SendSocketMessage(MATCH, payload);
+
+	GetStatisticsData(server);
+}
+
+array<int, 2> RLTM::GetScore(ServerWrapper server)
+{
+	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
+
+	if (!teams.IsNull())
+		if (teams.Count() > 1)
+		{
+			TeamWrapper team0 = teams.Get(0);
+			TeamWrapper team1 = teams.Get(1);
+
+			if (!team0.IsNull() && !team1.IsNull())
+				return { team0.GetScore(), team1.GetScore() };
+		}
+
+	return json::array();
+}
+
+void RLTM::GetPlayersData(ServerWrapper server)
+{
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 	if (players.IsNull()) return;
 
@@ -231,64 +286,6 @@ void RLTM::GetPlayersData(string caller)
 	SendSocketMessage(PLAYERS, payload);
 }
 
-void RLTM::GetMatchData(string caller)
-{
-	ServerWrapper server = GetServerWrapper();
-	if (!server && caller == "onLoad") ResetDatas();
-	if (!server) return;
-
-	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == true) return;
-
-	json payload = json::object();
-	payload["id"] = server.GetMatchGUID();
-	payload["map"] = gameWrapper->GetCurrentMap();
-	payload["score"] = GetScore(server);
-	payload["duration"] = server.GetGameTime();
-	payload["isUnlimited"] = (bool) server.GetbUnlimitedTime();
-	payload["isStarted"] = oldData[eventToTopic[MATCH]]["isStarted"] == true || server.GetbBallHasBeenHit() || caller == "Function GameEvent_TA.Countdown.BeginState";
-	payload["isPaused"] = gameWrapper->IsPaused() && !server.GetbMatchEnded();
-	payload["isOvertime"] = (bool) server.GetbOverTime();
-	payload["isEnded"] = (bool) server.GetbMatchEnded();
-	payload["isReplay"] = isReplay;
-
-	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["time"];
-	else payload["time"] = server.GetSecondsRemaining();
-
-	SendSocketMessage(MATCH, payload);
-
-	GetStatisticsData(server);
-
-	if (payload["isStarted"] == true && payload["isPaused"] == false && payload["isEnded"] == false)
-	{
-		SetReplayAutoSave(true);
-
-		if (!threadRunning)
-		{
-			threadRunning = true;
-			thread asyncThread(&RLTM::SendEntitiesData, this);
-			asyncThread.detach();
-		}
-	}
-	else threadRunning = false;
-}
-
-array<int, 2> RLTM::GetScore(ServerWrapper server)
-{
-	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
-
-	if (!teams.IsNull())
-		if (teams.Count() > 1)
-		{
-			TeamWrapper team0 = teams.Get(0);
-			TeamWrapper team1 = teams.Get(1);
-
-			if (!team0.IsNull() && !team1.IsNull())
-				return { team0.GetScore(), team1.GetScore() };
-		}
-
-	return json::array();
-}
-
 void RLTM::GetStatisticsData(ServerWrapper server)
 {
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
@@ -311,12 +308,12 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 
 		string playerName = player.GetPlayerName().ToString();
 		string playerUID = player.GetUniqueIdWrapper().GetIdString();
-		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
+		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName];
 
 		for (string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
 			playerData[event] = !data[event].is_null() ? (int) data[event] : 0;
 
-		payload[player.GetTeamNum()][playerUID + '_' + playerName] = playerData;
+		payload[player.GetTeamNum()][playerUID + '|' + playerName] = playerData;
 	}
 
 	SendSocketMessage(STATISTICS, payload);
@@ -335,7 +332,7 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 
 	string playerName = player.GetPlayerName().ToString();
 	string playerUID = player.GetUniqueIdWrapper().GetIdString();
-	string tick = event.GetEventName() + '_' + playerUID + '_' + playerName;
+	string tick = event.GetEventName() + '|' + playerUID + '|' + playerName;
 
 	if (tickBuffer == tick)
 	{
@@ -344,12 +341,12 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	}
 	else tickBuffer = tick;
 
-	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName];
+	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName];
 	if (!data[event.GetEventName()].is_null())
-		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '_' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
+		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
 	json payload = json::object();
-	payload["player"] = playerUID + '_' + playerName;
+	payload["player"] = playerUID + '|' + playerName;
 	payload["event"] = event.GetEventName();
 
 	SendSocketMessage(STATISTIC, payload);
@@ -425,7 +422,7 @@ void RLTM::GetEntitiesData()
 			if (boost.IsNull()) carData["boost"] = -1;
 			else carData["boost"] = (int) (boost.GetCurrentBoostAmount() * 100);
 
-			payload["cars"][player.GetTeamNum()][playerUID + '_' + playerName] = carData;
+			payload["cars"][player.GetTeamNum()][playerUID + '|' + playerName] = carData;
 		}
 	}
 

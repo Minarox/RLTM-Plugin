@@ -74,9 +74,9 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	json entitiesData = json::object();
 	ServerWrapper GetServerWrapper();
 	void SetReplayState(bool state, string caller);
-	void GetPlayersData(string caller);
 	void GetMatchData(string caller);
 	array<int, 2> GetScore(ServerWrapper server);
+	void GetPlayersData(ServerWrapper server);
 	void GetStatisticsData(ServerWrapper server);
 	void GetPlayerStatData(ServerWrapper _server, void* params);
 	void GetEntitiesData();
