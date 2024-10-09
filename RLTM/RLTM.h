@@ -26,7 +26,8 @@ enum Event
 	MATCH,
 	STATISTICS,
 	STATISTIC,
-	ENTITIES
+	ENTITIES,
+	PLAYERS
 };
 
 map<Event, string> eventToTopic = {
