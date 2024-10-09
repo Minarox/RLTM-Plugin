@@ -11,7 +11,6 @@
 ![Project version](https://img.shields.io/badge/Version-V1.0.0.458-blue)&nbsp;
 ![Project License](https://img.shields.io/github/license/Minarox/RLTM-Plugin?label=License)&nbsp;
 
-
   <p align="center">
     RLTM Plugin for BakkesMod
     <br />
@@ -38,11 +37,11 @@
 
 ## About The Project
 
-BakkesMod plugin to fetch and send real time data from Rocket League to the [RLTM Backend](https://github.com/Minarox/RLTM-Backend) through WebSocket.
+BakkesMod plugin to fetch and send real time data from Rocket League to the [RLTM Backend](https://github.com/Minarox/RLTM) through WebSocket.
 
 ### Features
 
-- Connect and auto-reconnect to [Backend](https://github.com/Minarox/RLTM-Backend)
+- Connect and auto-reconnect to [Backend](https://github.com/Minarox/RLTM)
 - Send match, statistics and entities datas
 - Hide some parts of the HUD in spectator
 - Remove Engine debug graph in spectator
@@ -59,13 +58,14 @@ BakkesMod plugin to fetch and send real time data from Rocket League to the [RLT
 
 ## Roadmap
 
-- [x] WebSocket connection to [Backend](https://github.com/Minarox/RLTM-Backend)
+- [x] WebSocket connection to [Backend](https://github.com/Minarox/RLTM)
 - [x] Automatic reconnection on interruption
 - [x] Fetch match data (time, score, state, etc.)
 - [x] Fetch statistics data (scoreboard, statistic event, etc.)
 - [x] Fetch entities data (boost, position, etc.)
+- [x] Fetch players data (uid, name, car, etc.)
 - [ ] Fetch current spectator target
-- [x] Send datas to [Backend](https://github.com/Minarox/RLTM-Backend)
+- [x] Send datas to [Backend](https://github.com/Minarox/RLTM)
 - [ ] Optimize data stream with [protobuf](https://protobuf.dev/)
 - [x] Hide HUD when spectating
 - [x] Hide engine debug statistics when spectating (F10)
@@ -73,7 +73,7 @@ BakkesMod plugin to fetch and send real time data from Rocket League to the [RLT
 - [x] Save match replay when match end
 - [ ] Customize replay name
 - [ ] Plugin settings
-- [ ] Control the game from [Backend](https://github.com/Minarox/RLTM-Backend)
+- [ ] Control the game from [Backend](https://github.com/Minarox/RLTM)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
