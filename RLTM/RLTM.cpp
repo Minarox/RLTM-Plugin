@@ -275,13 +275,13 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 		playerData["carTouches"] = player.GetCarTouches();
 
 		string playerName = player.GetPlayerName().ToString();
-		string playerUID = player.GetUniqueIdWrapper().GetIdString();
-		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName];
+		string playerID = player.GetUniqueIdWrapper().GetIdString();
+		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerID + '|' + playerName];
 
 		for (string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
 			playerData[event] = !data[event].is_null() ? (int) data[event] : 0;
 
-		payload[player.GetTeamNum()][playerUID + '|' + playerName] = playerData;
+		payload[player.GetTeamNum()][playerID + '|' + playerName] = playerData;
 	}
 
 	SendSocketMessage(STATISTICS, payload);
@@ -299,8 +299,8 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	if (player.IsNull() || event.IsNull()) return;
 
 	string playerName = player.GetPlayerName().ToString();
-	string playerUID = player.GetUniqueIdWrapper().GetIdString();
-	string tick = event.GetEventName() + '|' + playerUID + '|' + playerName;
+	string playerID = player.GetUniqueIdWrapper().GetIdString();
+	string tick = event.GetEventName() + '|' + playerID + '|' + playerName;
 
 	if (tickBuffer == tick)
 	{
@@ -309,12 +309,12 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	}
 	else tickBuffer = tick;
 
-	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName];
+	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerID + '|' + playerName];
 	if (!data[event.GetEventName()].is_null())
-		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
+		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerID + '|' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
 	json payload = json::object();
-	payload["player"] = playerUID + '|' + playerName;
+	payload["player"] = playerID + '|' + playerName;
 	payload["event"] = event.GetEventName();
 
 	SendSocketMessage(STATISTIC, payload);
@@ -336,16 +336,16 @@ void RLTM::GetPlayersData(ServerWrapper server)
 		if (car.IsNull() || car.GetLoadoutBody() == 0) return;
 
 		string playerName = player.GetPlayerName().ToString();
-		string playerUID = player.GetUniqueIdWrapper().GetIdString();
+		string playerID = player.GetUniqueIdWrapper().GetIdString();
 
 		json playerData = json::object();
 
+		playerData["id"] = playerID;
 		playerData["name"] = playerName;
-		playerData["uid"] = playerUID;
 		playerData["bot"] = (bool)player.GetbBot();
 		playerData["carId"] = car.GetLoadoutBody();
 
-		payload[player.GetTeamNum()][playerUID + '|' + playerName] = playerData;
+		payload[player.GetTeamNum()][playerID + '|' + playerName] = playerData;
 	}
 
 	SendSocketMessage(PLAYERS, payload);
@@ -400,7 +400,7 @@ void RLTM::GetEntitiesData()
 			if (car.IsNull()) continue;
 
 			string playerName = player.GetPlayerName().ToString();
-			string playerUID = player.GetUniqueIdWrapper().GetIdString();
+			string playerID = player.GetUniqueIdWrapper().GetIdString();
 
 			Vector location = car.GetLocation();
 			Vector velocity = car.GetVelocity();
@@ -422,7 +422,7 @@ void RLTM::GetEntitiesData()
 			if (boost.IsNull()) carData["boost"] = -1;
 			else carData["boost"] = (int) (boost.GetCurrentBoostAmount() * 100);
 
-			payload["cars"][player.GetTeamNum()][playerUID + '|' + playerName] = carData;
+			payload["cars"][player.GetTeamNum()][playerID + '|' + playerName] = carData;
 		}
 	}
 
