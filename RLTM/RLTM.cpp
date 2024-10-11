@@ -262,19 +262,8 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 	for (PriWrapper player : players)
 	{
 		if (player.IsNull() || player.GetTeamNum() == 255) continue;
-
-		CarWrapper car = player.GetCar();
-		if (car.IsNull()) continue;
 		
-		string playerName = player.GetPlayerName().ToString();
-		string playerUID = player.GetUniqueIdWrapper().GetIdString();
-
 		json playerData = json::object();
-		
-		playerData["name"] = playerName;
-		playerData["uid"] = playerUID;
-		playerData["bot"] = (bool)player.GetbBot();
-		playerData["carId"] = car.GetLoadoutBody();
 
 		playerData["mvp"] = (bool) player.GetbMatchMVP();
 		playerData["score"] = player.GetMatchScore();
@@ -285,6 +274,8 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 		playerData["ballTouches"] = player.GetBallTouches();
 		playerData["carTouches"] = player.GetCarTouches();
 
+		string playerName = player.GetPlayerName().ToString();
+		string playerUID = player.GetUniqueIdWrapper().GetIdString();
 		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName];
 
 		for (string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
@@ -331,10 +322,42 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	GetStatisticsData(server);
 }
 
+void RLTM::GetPlayersData(ServerWrapper server)
+{
+	ArrayWrapper<PriWrapper> players = server.GetPRIs();
+	if (players.IsNull()) return;
+
+	json payload = json::array();
+	for (PriWrapper player : players)
+	{
+		if (player.IsNull() || player.GetTeamNum() == 255) continue;
+
+		CarWrapper car = player.GetCar();
+		if (car.IsNull() || car.GetLoadoutBody() == 0) return;
+
+		string playerName = player.GetPlayerName().ToString();
+		string playerUID = player.GetUniqueIdWrapper().GetIdString();
+
+		json playerData = json::object();
+
+		playerData["name"] = playerName;
+		playerData["uid"] = playerUID;
+		playerData["bot"] = (bool)player.GetbBot();
+		playerData["carId"] = car.GetLoadoutBody();
+
+		payload[player.GetTeamNum()][playerUID + '|' + playerName] = playerData;
+	}
+
+	SendSocketMessage(PLAYERS, payload);
+}
+
 void RLTM::GetEntitiesData()
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
+
+	GetPlayersData(server);
+
 	if (oldData[eventToTopic[MATCH]]["isStarted"] == false || server.GetbMatchEnded() || oldData[eventToTopic[MATCH]]["isPaused"] == true) return;
 
 	json payload = json::object();
