@@ -110,11 +110,11 @@ void RLTM::InitSocket()
 	if (socket.getReadyState() != ix::ReadyState::Closed) return;
 
 	socket.setUrl("ws://localhost:3300?token=");
-	socket.setHandshakeTimeout(4);
+	socket.setHandshakeTimeout(3);
 	socket.setPingInterval(2);
 	socket.enableAutomaticReconnection();
-	socket.setMinWaitBetweenReconnectionRetries(1000);
-	socket.setMaxWaitBetweenReconnectionRetries(1000);
+	socket.setMinWaitBetweenReconnectionRetries(500);
+	socket.setMaxWaitBetweenReconnectionRetries(500);
 	socket.enablePerMessageDeflate();
 	socket.addSubProtocol("json");
 
