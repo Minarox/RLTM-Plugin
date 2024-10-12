@@ -444,7 +444,7 @@ void RLTM::ResetDatas()
 	threadRunning = false;
 	isReplay = false;
 
-	for (Event event : { MATCH, STATISTICS, ENTITIES })
+	for (Event event : { MATCH, STATISTICS, ENTITIES, PLAYERS })
 		SendSocketMessage(event, {});
 }
 
