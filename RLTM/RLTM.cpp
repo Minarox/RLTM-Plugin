@@ -205,7 +205,7 @@ void RLTM::GetMatchData(string caller)
 
 	json payload = json::object();
 	payload["id"] = server.GetMatchGUID();
-	payload["map"] = gameWrapper->GetCurrentMap();
+	payload["mapId"] = gameWrapper->GetCurrentMap();
 	payload["score"] = GetScore(server);
 	payload["duration"] = server.GetGameTime();
 	payload["isUnlimited"] = (bool) server.GetbUnlimitedTime();
