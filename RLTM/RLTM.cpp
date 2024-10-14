@@ -204,8 +204,7 @@ void RLTM::GetMatchData(string caller)
 	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == true) return;
 
 	json payload = json::object();
-	payload["id"] = server.GetMatchGUID();
-	payload["mapId"] = gameWrapper->GetCurrentMap();
+	payload["arenaCode"] = gameWrapper->GetCurrentMap();
 	payload["score"] = GetScore(server);
 	payload["duration"] = server.GetGameTime();
 	payload["isUnlimited"] = (bool) server.GetbUnlimitedTime();
@@ -215,8 +214,8 @@ void RLTM::GetMatchData(string caller)
 	payload["isEnded"] = (bool) server.GetbMatchEnded();
 	payload["isReplay"] = isReplay;
 
-	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["time"] = oldData[eventToTopic[MATCH]]["time"];
-	else payload["time"] = server.GetSecondsRemaining();
+	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["clock"] = oldData[eventToTopic[MATCH]]["clock"];
+	else payload["clock"] = server.GetSecondsRemaining();
 
 	SendSocketMessage(MATCH, payload);
 
@@ -255,6 +254,8 @@ array<int, 2> RLTM::GetScore(ServerWrapper server)
 
 void RLTM::GetStatisticsData(ServerWrapper server)
 {
+	GetPlayersData(server);
+
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 	if (players.IsNull() || !players.Count()) return;
 
@@ -263,8 +264,14 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 	{
 		if (player.IsNull() || player.GetTeamNum() == 255) continue;
 		
+		string playerName = player.GetPlayerName().ToString();
+		string playerUID = player.GetUniqueIdWrapper().GetIdString();
+
 		json playerData = json::object();
 
+		playerData["uid"] = playerUID;
+		playerData["name"] = playerName;
+		playerData["bot"] = (bool) player.GetbBot();
 		playerData["mvp"] = (bool) player.GetbMatchMVP();
 		playerData["score"] = player.GetMatchScore();
 		playerData["goals"] = player.GetMatchGoals();
@@ -274,14 +281,12 @@ void RLTM::GetStatisticsData(ServerWrapper server)
 		playerData["ballTouches"] = player.GetBallTouches();
 		playerData["carTouches"] = player.GetCarTouches();
 
-		string playerName = player.GetPlayerName().ToString();
-		string playerID = player.GetUniqueIdWrapper().GetIdString();
-		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerID + '|' + playerName];
+		json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName];
 
 		for (string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
 			playerData[event] = !data[event].is_null() ? (int) data[event] : 0;
 
-		payload[player.GetTeamNum()][playerID + '|' + playerName] = playerData;
+		payload[player.GetTeamNum()][playerUID + '|' + playerName] = playerData;
 	}
 
 	SendSocketMessage(STATISTICS, payload);
@@ -299,8 +304,8 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	if (player.IsNull() || event.IsNull()) return;
 
 	string playerName = player.GetPlayerName().ToString();
-	string playerID = player.GetUniqueIdWrapper().GetIdString();
-	string tick = event.GetEventName() + '|' + playerID + '|' + playerName;
+	string playerUID = player.GetUniqueIdWrapper().GetIdString();
+	string tick = event.GetEventName() + '|' + playerUID + '|' + playerName;
 
 	if (tickBuffer == tick)
 	{
@@ -309,12 +314,14 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	}
 	else tickBuffer = tick;
 
-	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerID + '|' + playerName];
+	json data = oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName];
 	if (!data[event.GetEventName()].is_null())
-		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerID + '|' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
+		oldData[eventToTopic[STATISTICS]][player.GetTeamNum()][playerUID + '|' + playerName][event.GetEventName()] = data[event.GetEventName()] + 1;
 
 	json payload = json::object();
-	payload["player"] = playerID + '|' + playerName;
+	payload["uid"] = playerUID;
+	payload["name"] = playerName;
+	payload["bot"] = (bool) player.GetbBot();
 	payload["event"] = event.GetEventName();
 
 	SendSocketMessage(STATISTIC, payload);
@@ -336,16 +343,16 @@ void RLTM::GetPlayersData(ServerWrapper server)
 		if (car.IsNull() || car.GetLoadoutBody() == 0) return;
 
 		string playerName = player.GetPlayerName().ToString();
-		string playerID = player.GetUniqueIdWrapper().GetIdString();
+		string playerUID = player.GetUniqueIdWrapper().GetIdString();
 
 		json playerData = json::object();
 
-		playerData["id"] = playerID;
+		playerData["uid"] = playerUID;
 		playerData["name"] = playerName;
-		playerData["bot"] = (bool)player.GetbBot();
+		playerData["bot"] = (bool) player.GetbBot();
 		playerData["carId"] = car.GetLoadoutBody();
 
-		payload[player.GetTeamNum()][playerID + '|' + playerName] = playerData;
+		payload[player.GetTeamNum()][playerUID + '|' + playerName] = playerData;
 	}
 
 	SendSocketMessage(PLAYERS, payload);
@@ -400,7 +407,7 @@ void RLTM::GetEntitiesData()
 			if (car.IsNull()) continue;
 
 			string playerName = player.GetPlayerName().ToString();
-			string playerID = player.GetUniqueIdWrapper().GetIdString();
+			string playerUID = player.GetUniqueIdWrapper().GetIdString();
 
 			Vector location = car.GetLocation();
 			Vector velocity = car.GetVelocity();
@@ -422,7 +429,7 @@ void RLTM::GetEntitiesData()
 			if (boost.IsNull()) carData["boost"] = -1;
 			else carData["boost"] = (int) (boost.GetCurrentBoostAmount() * 100);
 
-			payload["cars"][player.GetTeamNum()][playerID + '|' + playerName] = carData;
+			payload["cars"][player.GetTeamNum()][playerUID + '|' + playerName] = carData;
 		}
 	}
 
