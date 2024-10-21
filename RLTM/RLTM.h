@@ -24,7 +24,6 @@ using namespace std;
 enum Event
 {
 	MATCH,
-	STATISTICS,
 	STATISTIC,
 	ENTITIES,
 	PLAYERS
@@ -32,7 +31,6 @@ enum Event
 
 map<Event, string> eventToTopic = {
 	{ MATCH, "match" },
-	{ STATISTICS, "statistics" },
 	{ STATISTIC, "statistic" },
 	{ ENTITIES, "entities" },
 	{ PLAYERS, "players" }
@@ -75,12 +73,12 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	ServerWrapper GetServerWrapper();
 	void SetReplayState(bool state, string caller);
 	void GetMatchData(string caller);
-	array<int, 2> GetScore(ServerWrapper server);
-	void GetStatisticsData(ServerWrapper server);
+	json GetScore(ServerWrapper server);
+	json GetStatistics(ServerWrapper server);
 	void GetPlayerStatData(ServerWrapper _server, void* params);
-	void GetPlayersData(ServerWrapper server);
 	void GetEntitiesData();
 	void SendEntitiesData();
+	void GetPlayersData(ServerWrapper server);
 	void ResetDatas();
 
 	// Game Replays
