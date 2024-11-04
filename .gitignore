@@ -1,5 +1,6 @@
 build*
 !source/libs/*
+vcpkg_installed/
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
