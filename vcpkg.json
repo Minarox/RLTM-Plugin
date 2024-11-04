@@ -1,0 +1,6 @@
+{
+  "dependencies": [
+    "ixwebsocket",
+    "nlohmann-json"
+  ]
+}
