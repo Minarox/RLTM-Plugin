@@ -213,7 +213,7 @@ void RLTM::GetMatchData(string caller)
 	payload["isOvertime"] = (bool) server.GetbOverTime();
 	payload["isEnded"] = (bool) server.GetbMatchEnded();
 	payload["isReplay"] = isReplay;
-	payload["statistics"] = GetStatistics(server);
+	payload["statistics"] = payload["isStarted"] ? GetStatistics(server) : json::object();
 
 	if (server.GetbMatchEnded() && server.GetbOverTime()) payload["clock"] = oldData[eventToTopic[MATCH]]["clock"];
 	else payload["clock"] = server.GetSecondsRemaining();
