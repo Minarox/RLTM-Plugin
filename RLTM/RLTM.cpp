@@ -203,6 +203,8 @@ void RLTM::GetMatchData(string caller)
 	if (!server) return;
 	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == true) return;
 
+	GetPlayersData(server);
+
 	json payload = json::object();
 	payload["arenaCode"] = gameWrapper->GetCurrentMap();
 	payload["score"] = GetScore(server);
@@ -339,10 +341,9 @@ void RLTM::GetEntitiesData()
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
+	if (!(oldData[eventToTopic[MATCH]]["isStarted"] == true && oldData[eventToTopic[MATCH]]["isEnded"] == false && oldData[eventToTopic[MATCH]]["isPaused"] == false)) return;
 
 	GetPlayersData(server);
-
-	if (oldData[eventToTopic[MATCH]]["isStarted"] == false || oldData[eventToTopic[MATCH]]["isEnded"] == true || oldData[eventToTopic[MATCH]]["isPaused"] == true) return;
 
 	json payload = json::object();
 	payload["balls"] = json::array();
