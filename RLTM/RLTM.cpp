@@ -16,6 +16,8 @@ void RLTM::onLoad()
 	_globalCvarManager = cvarManager;
 
 	ix::initNetSystem();
+	SetSpectatorUI();
+	SetStatGraph();
 	HookEvents();
 	GetMatchData("onLoad");
 	InitSocket();
@@ -104,34 +106,33 @@ void RLTM::InitSocket()
 	socket.enablePerMessageDeflate();
 	socket.addSubProtocol("json");
 
-	socket.setOnMessageCallback(
-		[this](const ix::WebSocketMessagePtr& msg)
+	socket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg)
 		{
 			switch (msg->type)
 			{
-			case ix::WebSocketMessageType::Open:
-				cvarManager->log("Socket connected");
-				for (auto& [key, value] : oldData.items())
-				{
-					json data = json::object();
-					data["topic"] = key;
-					data["payload"] = value;
+				case ix::WebSocketMessageType::Open:
+					cvarManager->log("Socket connected");
+					for (auto& [key, value] : oldData.items())
+					{
+						json data = json::object();
+						data["topic"] = key;
+						data["payload"] = value;
 
-					socket.send(data.dump());
-				}
-				break;
+						socket.send(data.dump());
+					}
+					break;
 
-			case ix::WebSocketMessageType::Message:
-				cvarManager->log("Socket message: " + msg->str);
-				break;
+				case ix::WebSocketMessageType::Message:
+					cvarManager->log("Socket message: " + msg->str);
+					break;
 
-			case ix::WebSocketMessageType::Error:
-				cvarManager->log("Socket error: " + msg->errorInfo.reason);
-				break;
+				case ix::WebSocketMessageType::Error:
+					cvarManager->log("Socket error: " + msg->errorInfo.reason);
+					break;
 
-			case ix::WebSocketMessageType::Close:
-				cvarManager->log("Socket disconnected");
-				break;
+				case ix::WebSocketMessageType::Close:
+					cvarManager->log("Socket disconnected");
+					break;
 			}
 		}
 	);
@@ -142,6 +143,7 @@ void RLTM::InitSocket()
 void RLTM::SendSocketMessage(Event event, json payload)
 {
 	string topic = eventToTopic[event];
+
 	json data = json::object();
 	data["topic"] = topic;
 	data["payload"] = payload;
