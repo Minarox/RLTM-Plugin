@@ -6,7 +6,6 @@ BAKKESMOD_PLUGIN(RLTM, "Rocket League Tournament Manager", plugin_version, PLUGI
 
 shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
-
 /*
 	--- Boilerplate ---
 */
@@ -14,6 +13,9 @@ shared_ptr<CVarManagerWrapper> _globalCvarManager;
 void RLTM::onLoad()
 {
 	_globalCvarManager = cvarManager;
+
+	cvarManager->registerCvar("rltm_ws_url", "ws://localhost:3300", "URL of the RLTM server", false);
+	cvarManager->registerCvar("rltm_ws_token", "", "Token of the tournament", false);
 
 	ix::initNetSystem();
 	SetSpectatorUI();
@@ -95,9 +97,12 @@ void RLTM::UnhookEvents()
 
 void RLTM::InitSocket()
 {
-	if (socket.getReadyState() != ix::ReadyState::Closed) return;
+	CVarWrapper wsUrl = cvarManager->getCvar("rltm_ws_url");
+	CVarWrapper wsToken = cvarManager->getCvar("rltm_ws_token");
 
-	socket.setUrl("ws://localhost:3300?token=");
+	if (socket.getReadyState() != ix::ReadyState::Closed || !wsUrl || !wsToken) return;
+
+	socket.setUrl(wsUrl.getStringValue() + "?token=" + wsToken.getStringValue());
 	socket.setHandshakeTimeout(3);
 	socket.setPingInterval(1);
 	socket.enableAutomaticReconnection();
@@ -501,7 +506,27 @@ void RLTM::SetReady()
 
 	PlayerControllerWrapper playerController = gameWrapper->GetPlayerController();
 	if (!playerController) return;
+	// playerController.ReadyUp()
 
 	PriWrapper player = playerController.GetPRI();
 	if (player) player.ServerReadyUp();
+}
+
+void RLTM::SetSpectator()
+{
+	ServerWrapper server = GetServerWrapper();
+	if (!server) return;
+
+	PlayerControllerWrapper playerController = gameWrapper->GetPlayerController();
+	if (!playerController) return;
+	// playerController.spectate()
+	// playerController.ChangeTeam(255)
+
+	PriWrapper player = playerController.GetPRI();
+	if (player && !player.IsSpectator() && !player.IsPlayer()) player.ServerChangeTeam(255);
+	// player.GetTeamNum()
+
+	// When new game (screen with teams / players and buttons to join team)
+	// If player is not already in a team
+	// Move player to spectator team
 }
