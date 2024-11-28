@@ -165,16 +165,16 @@ ServerWrapper RLTM::GetServerWrapper()
 	ServerWrapper onlineServer = gameWrapper->GetOnlineGame();
 	ServerWrapper localServer = gameWrapper->GetGameEventAsServer();
 
-	if (!onlineServer.IsNull())
+	if (onlineServer)
 	{
 		GameSettingPlaylistWrapper playlist = onlineServer.GetPlaylist();
-		if (!playlist.IsNull())
+		if (playlist)
 		{
 			int playlistID = playlist.GetPlaylistId();
 			if (playlistID == 6) return onlineServer;
 		}
 	}
-	if (!localServer.IsNull()) return localServer;
+	if (localServer) return localServer;
 
 	return NULL;
 }
@@ -233,14 +233,14 @@ json RLTM::GetScore(ServerWrapper server)
 	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
 	json score = json::array();
 
-	if (!teams.IsNull())
+	if (teams)
 	{
 		if (teams.Count() > 1)
 		{
 			TeamWrapper team0 = teams.Get(0);
 			TeamWrapper team1 = teams.Get(1);
 
-			if (!team0.IsNull() && !team1.IsNull())
+			if (team0 && team1)
 			{
 				score += team0.GetScore();
 				score += team1.GetScore();
@@ -258,11 +258,11 @@ json RLTM::GetStatistics(ServerWrapper server)
 	json statistics = json::object();
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 
-	if (!players.IsNull())
+	if (players)
 	{
 		for (PriWrapper player : players)
 		{
-			if (player.IsNull()) continue;
+			if (!player) continue;
 			if (player.GetTeamNum() == 255) continue;
 
 			string playerName = player.GetPlayerName().ToString();
@@ -303,7 +303,7 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	PriWrapper player = PriWrapper(pStruct->Receiver);
 	StatEventWrapper event = StatEventWrapper(pStruct->StatEvent);
 
-	if (player.IsNull() || event.IsNull()) return;
+	if (!player || !event) return;
 
 	string playerName = player.GetPlayerName().ToString();
 	string playerUID = player.GetUniqueIdWrapper().GetIdString();
@@ -341,13 +341,13 @@ void RLTM::GetEntitiesData()
 	payload["balls"] = json::array();
 
 	auto balls = server.GetGameBalls();
-	if (!balls.IsNull())
+	if (balls)
 	{
 		int i = 0;
 		for (int index = 0; index < balls.Count(); index++)
 		{
 			BallWrapper ball = balls.Get(i);
-			if (ball.IsNull()) continue;
+			if (!ball) continue;
 
 			Vector location = ball.GetLocation();
 			// Vector velocity = ball.GetVelocity();
@@ -367,15 +367,15 @@ void RLTM::GetEntitiesData()
 	payload["cars"] = json::array();
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 
-	if (!players.IsNull())
+	if (players)
 	{
 		for (PriWrapper player : players)
 		{
-			if (player.IsNull()) continue;
+			if (!player) continue;
 			if(player.GetTeamNum() == 255) continue;
 
 			CarWrapper car = player.GetCar();
-			if (car.IsNull()) continue;
+			if (!car) continue;
 
 			Vector location = car.GetLocation();
 			// Vector velocity = car.GetVelocity();
@@ -398,7 +398,7 @@ void RLTM::GetEntitiesData()
 			carData["asFlip"] = (bool) car.HasFlip();
 
 			auto boost = car.GetBoostComponent();
-			if (boost.IsNull()) carData["boost"] = 0;
+			if (!boost) carData["boost"] = 0;
 			else carData["boost"] = (int) (boost.GetCurrentBoostAmount() * 100);
 
 			payload["cars"] += carData;
@@ -422,11 +422,11 @@ void RLTM::GetPlayersData(ServerWrapper server)
 	json playersArray = json::array();
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 
-	if (players.IsNull() || !players.Count()) return;
+	if (!players || !players.Count()) return;
 
 	for (PriWrapper player : players)
 	{
-		if (player.IsNull()) continue;
+		if (!player) continue;
 
 		json playerData = json::object();
 		playerData["uid"] = player.GetUniqueIdWrapper().GetIdString();
@@ -435,7 +435,7 @@ void RLTM::GetPlayersData(ServerWrapper server)
 		playerData["teamIndex"] = player.GetTeamNum();
 
 		CarWrapper car = player.GetCar();
-		if (car.IsNull()) playerData["carId"] = 0;
+		if (!car) playerData["carId"] = 0;
 		else playerData["carId"] = car.GetLoadoutBody();
 
 		playersArray += playerData;
@@ -475,10 +475,10 @@ void RLTM::SetSpectatorUI(int sleep)
 	if (!server) return;
 
 	PlayerControllerWrapper primaryPlayer = server.GetLocalPrimaryPlayer();
-	if (primaryPlayer.IsNull()) return;
+	if (!primaryPlayer) return;
 
 	PriWrapper player = primaryPlayer.GetPRI();
-	if (!player.IsNull() && player.IsSpectator())
+	if (player && player.IsSpectator())
 		cvarManager->executeCommand("sleep " + to_string(sleep) + "; sleep 16; replay_gui hud 0; replay_gui names 1; replay_gui matchinfo 1", false);
 }
 
@@ -488,10 +488,10 @@ void RLTM::SetStatGraph()
 	if (!server) return;
 
 	EngineTAWrapper engine = gameWrapper->GetEngine();
-	if (engine.IsNull()) return;
+	if (!engine) return;
 
 	StatGraphSystemWrapper statGraphs = engine.GetStatGraphs();
-	if (!statGraphs.IsNull()) statGraphs.SetGraphLevel(6);
+	if (statGraphs) statGraphs.SetGraphLevel(6);
 }
 
 void RLTM::SetReady()
@@ -500,8 +500,8 @@ void RLTM::SetReady()
 	if (!server) return;
 
 	PlayerControllerWrapper playerController = gameWrapper->GetPlayerController();
-	if (playerController.IsNull()) return;
+	if (!playerController) return;
 
 	PriWrapper player = playerController.GetPRI();
-	if (!player.IsNull()) player.ServerReadyUp();
+	if (player) player.ServerReadyUp();
 }
