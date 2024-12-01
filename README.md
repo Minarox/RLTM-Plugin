@@ -71,7 +71,7 @@ BakkesMod plugin to fetch and send real time data from Rocket League to the [RLT
 - [x] Hide engine debug statistics when spectating (F10)
 - [x] Mark as ready when match end
 - [x] Save match replay when match end
-- [ ] Join spectator team on new game
+- [x] Join spectator team on new game
 - [ ] Customize replay name
 - [ ] Plugin settings
 - [ ] Control the game from [Backend](https://github.com/Minarox/RLTM)
