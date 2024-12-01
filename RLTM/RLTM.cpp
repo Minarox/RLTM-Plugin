@@ -14,12 +14,13 @@ void RLTM::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
-	cvarManager->registerCvar("rltm_ws_url", "ws://localhost:3300", "URL of the RLTM server", false);
+	cvarManager->registerCvar("rltm_ws_url", "rltm.minarox.fr", "Domain of the RLTM server", false);
 	cvarManager->registerCvar("rltm_ws_token", "", "Token of the tournament", false);
 
 	ix::initNetSystem();
-	SetSpectatorUI();
+	SetSpectatorUI(100);
 	SetStatGraph();
+	SetSpectator();
 	HookEvents();
 	GetMatchData("onLoad");
 	InitSocket();
@@ -102,7 +103,7 @@ void RLTM::InitSocket()
 
 	if (socket.getReadyState() != ix::ReadyState::Closed || !wsUrl || !wsToken) return;
 
-	socket.setUrl(wsUrl.getStringValue() + "?token=" + wsToken.getStringValue());
+	socket.setUrl("wss://" + wsUrl.getStringValue() + "/?token=" + wsToken.getStringValue());
 	socket.setHandshakeTimeout(3);
 	socket.setPingInterval(1);
 	socket.enableAutomaticReconnection();
@@ -116,7 +117,6 @@ void RLTM::InitSocket()
 			switch (msg->type)
 			{
 				case ix::WebSocketMessageType::Open:
-					cvarManager->log("Socket connected");
 					for (auto& [key, value] : oldData.items())
 					{
 						json data = json::object();
@@ -125,18 +125,6 @@ void RLTM::InitSocket()
 
 						socket.send(data.dump());
 					}
-					break;
-
-				case ix::WebSocketMessageType::Message:
-					cvarManager->log("Socket message: " + msg->str);
-					break;
-
-				case ix::WebSocketMessageType::Error:
-					cvarManager->log("Socket error: " + msg->errorInfo.reason);
-					break;
-
-				case ix::WebSocketMessageType::Close:
-					cvarManager->log("Socket disconnected");
 					break;
 			}
 		}
@@ -199,6 +187,7 @@ void RLTM::GetMatchData(string caller)
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
 	if (caller == "Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit" && oldData[eventToTopic[MATCH]]["isStarted"] == true) return;
+	if (caller == "Function TAGame.GameEvent_Soccar_TA.AddLocalPlayer") SetSpectator();
 
 	GetPlayersData(server);
 
@@ -235,23 +224,20 @@ void RLTM::GetMatchData(string caller)
 
 json RLTM::GetScore(ServerWrapper server)
 {
-	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
 	json score = json::array();
+	ArrayWrapper<TeamWrapper> teams = server.GetTeams();
 
-	if (teams)
+	if (teams.Count() > 1)
 	{
-		if (teams.Count() > 1)
+		TeamWrapper team0 = teams.Get(0);
+		TeamWrapper team1 = teams.Get(1);
+
+		if (team0 && team1)
 		{
-			TeamWrapper team0 = teams.Get(0);
-			TeamWrapper team1 = teams.Get(1);
+			score += team0.GetScore();
+			score += team1.GetScore();
 
-			if (team0 && team1)
-			{
-				score += team0.GetScore();
-				score += team1.GetScore();
-
-				return score;
-			}
+			return score;
 		}
 	}
 
@@ -263,37 +249,34 @@ json RLTM::GetStatistics(ServerWrapper server)
 	json statistics = json::object();
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 
-	if (players)
+	for (PriWrapper player : players)
 	{
-		for (PriWrapper player : players)
-		{
-			if (!player) continue;
-			if (player.GetTeamNum() == 255) continue;
+		if (!player) continue;
+		if (player.GetTeamNum() == 255) continue;
 
-			string playerName = player.GetPlayerName().ToString();
-			string playerUID = player.GetUniqueIdWrapper().GetIdString();
+		string playerName = player.GetPlayerName().ToString();
+		string playerUID = player.GetUniqueIdWrapper().GetIdString();
 
-			json playerData = json::object();
-			playerData["uid"] = playerUID;
-			playerData["name"] = playerName;
-			playerData["bot"] = (bool) player.GetbBot();
-			playerData["teamIndex"] = player.GetTeamNum();
-			playerData["mvp"] = (bool) player.GetbMatchMVP();
-			playerData["score"] = player.GetMatchScore();
-			playerData["goals"] = player.GetMatchGoals();
-			playerData["shots"] = player.GetMatchShots();
-			playerData["assists"] = player.GetMatchAssists();
-			playerData["saves"] = player.GetMatchSaves();
-			playerData["ballTouches"] = player.GetBallTouches();
-			playerData["carTouches"] = player.GetCarTouches();
+		json playerData = json::object();
+		playerData["uid"] = playerUID;
+		playerData["name"] = playerName;
+		playerData["bot"] = (bool) player.GetbBot();
+		playerData["teamIndex"] = player.GetTeamNum();
+		playerData["mvp"] = (bool) player.GetbMatchMVP();
+		playerData["score"] = player.GetMatchScore();
+		playerData["goals"] = player.GetMatchGoals();
+		playerData["shots"] = player.GetMatchShots();
+		playerData["assists"] = player.GetMatchAssists();
+		playerData["saves"] = player.GetMatchSaves();
+		playerData["ballTouches"] = player.GetBallTouches();
+		playerData["carTouches"] = player.GetCarTouches();
 
-			json data = oldData[eventToTopic[MATCH]]["statistics"][playerUID + '|' + playerName];
+		json data = oldData[eventToTopic[MATCH]]["statistics"][playerUID + '|' + playerName];
 
-			for (string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
-				playerData[event] = data[event].is_null() ? 0 : (int) data[event];
+		for (string event : { "Demolish", "Demolition", "AerialGoal", "BackwardsGoal", "BicycleGoal", "LongGoal", "TurtleGoal", "PoolShot", "OvertimeGoal", "HatTrick", "Playmaker", "EpicSave", "Savior", "Center", "Clear", "FirstTouch", "BreakoutDamage", "BreakoutDamageLarge", "LowFive", "HighFive", "HoopsSwishGoal", "BicycleHit", "OwnGoal", "KO_Winner", "KO_Knockout", "KO_DoubleKO", "KO_TripleKO", "KO_Death", "KO_LightHit", "KO_HeavyHit", "KO_AerialLightHit", "KO_AerialHeavyHit", "KO_HitTaken", "KO_BlockTaken", "KO_Grabbed", "KO_Thrown", "KO_LightBlock", "KO_HeavyBlock", "KO_PlayerGrabbed", "KO_PlayerThrown" })
+			playerData[event] = data[event].is_null() ? 0 : (int) data[event];
 
-			statistics[playerUID + '|' + playerName] = playerData;
-		}
+		statistics[playerUID + '|' + playerName] = playerData;
 	}
 
 	return statistics;
@@ -345,69 +328,62 @@ void RLTM::GetEntitiesData()
 	json payload = json::object();
 	payload["balls"] = json::array();
 
-	auto balls = server.GetGameBalls();
-	if (balls)
+	ArrayWrapper<BallWrapper> balls = server.GetGameBalls();
+
+	for (BallWrapper ball : balls)
 	{
-		int i = 0;
-		for (int index = 0; index < balls.Count(); index++)
-		{
-			BallWrapper ball = balls.Get(i);
-			if (!ball) continue;
+		if (!ball) continue;
 
-			Vector location = ball.GetLocation();
-			// Vector velocity = ball.GetVelocity();
-			// Rotator rotation = ball.GetRotation();
+		Vector location = ball.GetLocation();
+		// Vector velocity = ball.GetVelocity();
+		// Rotator rotation = ball.GetRotation();
 
-			json ballData = json::object();
-			ballData["radius"] = (int) ball.GetRadius();
-			ballData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
-			//ballData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
-			//ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
+		json ballData = json::object();
+		ballData["speed"] = (int) ((ball.GetVelocity().magnitude() * 0.036f) + 0.5f);
+		ballData["radius"] = (int) ball.GetRadius();
+		ballData["location"] = { (int)location.X, (int)location.Y, (int)location.Z };
+		//ballData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
+		//ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
 
-			payload["balls"] += ballData;
-			i++;
-		}
+		payload["balls"] += ballData;
 	}
 
 	payload["cars"] = json::array();
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
 
-	if (players)
+	for (PriWrapper player : players)
 	{
-		for (PriWrapper player : players)
-		{
-			if (!player) continue;
-			if(player.GetTeamNum() == 255) continue;
+		if (!player) continue;
+		if(player.GetTeamNum() == 255) continue;
 
-			CarWrapper car = player.GetCar();
-			if (!car) continue;
+		CarWrapper car = player.GetCar();
+		if (!car) continue;
 
-			Vector location = car.GetLocation();
-			// Vector velocity = car.GetVelocity();
-			// Rotator rotation = car.GetRotation();
+		Vector location = car.GetLocation();
+		// Vector velocity = car.GetVelocity();
+		// Rotator rotation = car.GetRotation();
 
-			json carData = json::object();
-			carData["uid"] = player.GetUniqueIdWrapper().GetIdString();
-			carData["name"] = player.GetPlayerName().ToString();
-			carData["bot"] = (bool) player.GetbBot();
-			carData["teamIndex"] = player.GetTeamNum();
-			carData["speed"] = (int) ((car.GetVelocity().magnitude() * 0.036f) + 0.5f);
-			carData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
-			//carData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
-			//carData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
-			carData["isSuperSonic"] = (bool) car.GetbSuperSonic();
-			carData["isOnWall"] = car.IsOnWall();
-			carData["isOnGround"] = car.IsOnGround();
-			carData["isInGoal"] = (bool) car.GetbWasInGoalZone();
-			carData["isDodging"] = car.IsDodging();
-			carData["asFlip"] = (bool) car.HasFlip();
+		json carData = json::object();
+		carData["uid"] = player.GetUniqueIdWrapper().GetIdString();
+		carData["name"] = player.GetPlayerName().ToString();
+		carData["bot"] = (bool) player.GetbBot();
+		carData["teamIndex"] = player.GetTeamNum();
+		carData["speed"] = (int) ((car.GetVelocity().magnitude() * 0.036f) + 0.5f);
+		carData["location"] = { (int) location.X, (int) location.Y, (int) location.Z };
+		//carData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
+		//carData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
+		carData["isSuperSonic"] = (bool) car.GetbSuperSonic();
+		carData["isOnWall"] = car.IsOnWall();
+		carData["isOnGround"] = car.IsOnGround();
+		carData["isInGoal"] = (bool) car.GetbWasInGoalZone();
+		carData["isDodging"] = car.IsDodging();
+		carData["asFlip"] = (bool) car.HasFlip();
 
-			auto boost = car.GetBoostComponent();
-			if (!boost) carData["boost"] = 0;
-			else carData["boost"] = (int) (boost.GetCurrentBoostAmount() * 100);
+		auto boost = car.GetBoostComponent();
+		if (!boost) carData["boost"] = 0;
+		else carData["boost"] = (int) (boost.GetCurrentBoostAmount() * 100);
 
-			payload["cars"] += carData;
-		}
+		payload["cars"] += carData;
 	}
 
 	entitiesData = payload;
@@ -417,7 +393,7 @@ void RLTM::SendEntitiesData()
 {
 	while (threadRunning)
 	{
-		SendSocketMessage(ENTITIES, entitiesData);
+		if (entitiesData) SendSocketMessage(ENTITIES, entitiesData);
 		this_thread::sleep_for(chrono::milliseconds(100));
 	}
 }
@@ -426,8 +402,6 @@ void RLTM::GetPlayersData(ServerWrapper server)
 {
 	json playersArray = json::array();
 	ArrayWrapper<PriWrapper> players = server.GetPRIs();
-
-	if (!players || !players.Count()) return;
 
 	for (PriWrapper player : players)
 	{
@@ -506,7 +480,6 @@ void RLTM::SetReady()
 
 	PlayerControllerWrapper playerController = gameWrapper->GetPlayerController();
 	if (!playerController) return;
-	// playerController.ReadyUp()
 
 	PriWrapper player = playerController.GetPRI();
 	if (player) player.ServerReadyUp();
@@ -519,14 +492,10 @@ void RLTM::SetSpectator()
 
 	PlayerControllerWrapper playerController = gameWrapper->GetPlayerController();
 	if (!playerController) return;
-	// playerController.spectate()
-	// playerController.ChangeTeam(255)
 
 	PriWrapper player = playerController.GetPRI();
-	if (player && !player.IsSpectator() && !player.IsPlayer()) player.ServerChangeTeam(255);
-	// player.GetTeamNum()
-
-	// When new game (screen with teams / players and buttons to join team)
-	// If player is not already in a team
-	// Move player to spectator team
+	if (player)
+	{
+		if (player.IsPlayer()) player.ServerSpectate();
+	}
 }

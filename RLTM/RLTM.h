@@ -89,4 +89,5 @@ class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugi
 	void SetSpectatorUI(int sleep);
 	void SetStatGraph();
 	void SetReady();
+	void SetSpectator();
 };
