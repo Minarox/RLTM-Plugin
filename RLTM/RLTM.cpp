@@ -168,6 +168,8 @@ ServerWrapper RLTM::GetServerWrapper()
 		}
 	}
 	if (localServer) return localServer;
+
+	return NULL;
 }
 
 void RLTM::SetReplayState(bool state, string caller)
@@ -346,7 +348,7 @@ void RLTM::GetEntitiesData()
 
 		json ballData = json::object();
 		ballData["speed"] = (int) ((ball.GetVelocity().magnitude() * 0.036f) + 0.5f);
-		ballData["radius"] = (int) ball.GetRadius();
+		//ballData["radius"] = (int) ball.GetRadius();
 		ballData["location"] = { (int)location.X, (int)location.Y, (int)location.Z };
 		//ballData["velocity"] = { (int) velocity.X, (int) velocity.Y, (int) velocity.Z };
 		//ballData["rotation"] = { rotation.Pitch, rotation.Yaw, rotation.Roll };
@@ -360,7 +362,7 @@ void RLTM::GetEntitiesData()
 	for (PriWrapper player : players)
 	{
 		if (!player) continue;
-		if(player.GetTeamNum() == 255) continue;
+		if (player.GetTeamNum() == 255) continue;
 
 		CarWrapper car = player.GetCar();
 		if (!car) continue;
@@ -422,7 +424,6 @@ void RLTM::GetPlayersData(ServerWrapper server)
 		UniqueIDWrapper playerUID = player.GetUniqueIdWrapper();
 		UnrealStringWrapper playerName = player.GetPlayerName();
 		if (!playerName) return;
-		if (!player.GetTeamNum()) continue;
 
 		json playerData = json::object();
 		playerData["uid"] = playerUID.GetIdString();
