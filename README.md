@@ -2,19 +2,17 @@
 <br />
 
 <div align="center">
-<a href="https://github.com/Minarox/RLTM-Plugin">
+<a href="https://github.com/Minarox/WSC-Plugin">
     <img src="https://avatars.githubusercontent.com/u/71065703?v=4" alt="Logo Minarox" width="auto" height="80" style="border-radius: 4px">
 </a>
 
-<h3 align="center">RLTM Plugin</h3>
+<h3 align="center">WebSocket Controller Plugin</h3>
 
 ![Project version](https://img.shields.io/badge/Version-V1.0.0.458-blue)&nbsp;
-![Project License](https://img.shields.io/github/license/Minarox/RLTM-Plugin?label=License)&nbsp;
+![Project License](https://img.shields.io/github/license/Minarox/WSC-Plugin?label=License)&nbsp;
 
   <p align="center">
-    RLTM Plugin for BakkesMod
-    <br />
-    <a href="https://rltm.minarox.fr/"><strong>minarox.fr »</strong></a>
+    WebSocket Controller Plugin for BakkesMod
   </p>
 </div>
 <br />
@@ -37,11 +35,11 @@
 
 ## About The Project
 
-BakkesMod plugin to fetch and send real time data from Rocket League to the [RLTM Backend](https://github.com/Minarox/RLTM) through WebSocket.
+Stream real time data and remote control the game from a WebSocket server.
 
 ### Features
 
-- Connect and auto-reconnect to [Backend](https://github.com/Minarox/RLTM)
+- Bi-directionnal communication with any WebSocket server
 - Send match, statistics and entities datas
 - Hide some parts of the HUD in spectator
 - Remove Engine debug graph in spectator
@@ -58,15 +56,14 @@ BakkesMod plugin to fetch and send real time data from Rocket League to the [RLT
 
 ## Roadmap
 
-- [x] WebSocket connection to [Backend](https://github.com/Minarox/RLTM)
+- [x] WebSocket connection to server
 - [x] Automatic reconnection on interruption
 - [x] Fetch match data (time, score, state, etc.)
 - [x] Fetch statistics data (scoreboard, statistic event, etc.)
 - [x] Fetch entities data (boost, position, etc.)
 - [x] Fetch players data (uid, name, car, etc.)
 - [ ] Fetch current spectator target
-- [x] Send datas to [Backend](https://github.com/Minarox/RLTM)
-- [ ] Optimize data stream with [protobuf](https://protobuf.dev/)
+- [x] Send datas to server
 - [x] Hide HUD when spectating
 - [x] Hide engine debug statistics when spectating (F10)
 - [x] Mark as ready when match end
@@ -74,7 +71,7 @@ BakkesMod plugin to fetch and send real time data from Rocket League to the [RLT
 - [x] Join spectator team on new game
 - [ ] Customize replay name
 - [ ] Plugin settings
-- [ ] Control the game from [Backend](https://github.com/Minarox/RLTM)
+- [ ] Control the game from the server
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
