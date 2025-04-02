@@ -49,7 +49,7 @@ struct StatEventParams
 	uintptr_t StatEvent;
 };
 
-class RLTM: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
+class WSC: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
 	// Boilerplate
 	virtual void onLoad();

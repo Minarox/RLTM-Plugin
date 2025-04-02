@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "RLTM.h"
+#include "WSC.h"
 
 
-BAKKESMOD_PLUGIN(RLTM, "Rocket League Tournament Manager", plugin_version, PLUGINTYPE_SPECTATOR)
+BAKKESMOD_PLUGIN(WSC, "WebSocket Controller", plugin_version, PLUGINTYPE_SPECTATOR)
 
 shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
@@ -10,12 +10,11 @@ shared_ptr<CVarManagerWrapper> _globalCvarManager;
 	--- Boilerplate ---
 */
 
-void RLTM::onLoad()
+void WSC::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
-	cvarManager->registerCvar("rltm_ws_url", "rltm.minarox.fr", "Domain of the RLTM server", false);
-	cvarManager->registerCvar("rltm_ws_token", "", "Token of the tournament", false);
+	cvarManager->registerCvar("wsc_url", "wss://example.com", "URL of the WebSocket server", false);
 
 	ix::initNetSystem();
 	SetSpectatorUI(100);
@@ -25,17 +24,17 @@ void RLTM::onLoad()
 	GetMatchData("onLoad");
 	InitSocket();
 
-	cvarManager->log("RLTM Plugin loaded");
+	cvarManager->log("WSC plugin loaded.");
 }
 
-void RLTM::onUnload()
+void WSC::onUnload()
 {
 	UnhookEvents();
 	ResetDatas();
 	socket.stop();
 	ix::uninitNetSystem();
 
-	cvarManager->log("RLTM Plugin unloaded");
+	cvarManager->log("WSC plugin unloaded.");
 }
 
 
@@ -43,31 +42,31 @@ void RLTM::onUnload()
 	--- Hooks ---
 */
 
-void RLTM::HookEvents()
+void WSC::HookEvents()
 {
-	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.AddLocalPlayer", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.PRI_TA.OnTeamChanged", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.Team_TA.OnScoreUpdated", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function Engine.WorldInfo.EventPauseChanged", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded", bind(&RLTM::GetMatchData, this, placeholders::_1));
-	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", bind(&RLTM::SetReplayState, this, true, placeholders::_1));
-	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", bind(&RLTM::SetReplayState, this, false, placeholders::_1));
-	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&RLTM::GetPlayerStatData, this, placeholders::_1, placeholders::_2));
-	gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&RLTM::GetEntitiesData, this));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", bind(&RLTM::ResetDatas, this));
-	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx", bind(&RLTM::SetSpectatorUI, this, 100));
-	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", bind(&RLTM::SetSpectatorUI, this, 0));
-	gameWrapper->HookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs", bind(&RLTM::SetStatGraph, this));
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay", bind(&RLTM::SetReady, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.AddLocalPlayer", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.PRI_TA.OnTeamChanged", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function GameEvent_TA.Countdown.BeginState", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnBallHasBeenHit", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.Team_TA.OnScoreUpdated", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnGameTimeUpdated", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnOvertimeUpdated", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function Engine.WorldInfo.EventPauseChanged", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.EventMatchEnded", bind(&WSC::GetMatchData, this, placeholders::_1));
+	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState", bind(&WSC::SetReplayState, this, true, placeholders::_1));
+	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.EndState", bind(&WSC::SetReplayState, this, false, placeholders::_1));
+	gameWrapper->HookEventWithCallerPost<ServerWrapper>("Function TAGame.GFxHUD_TA.HandleStatTickerMessage", bind(&WSC::GetPlayerStatData, this, placeholders::_1, placeholders::_2));
+	gameWrapper->HookEventPost("Function Engine.GameViewportClient.Tick", bind(&WSC::GetEntitiesData, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", bind(&WSC::ResetDatas, this));
+	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.InitGFx", bind(&WSC::SetSpectatorUI, this, 100));
+	gameWrapper->HookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD", bind(&WSC::SetSpectatorUI, this, 0));
+	gameWrapper->HookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs", bind(&WSC::SetStatGraph, this));
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay", bind(&WSC::SetReady, this));
 }
 
-void RLTM::UnhookEvents()
+void WSC::UnhookEvents()
 {
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.EventPlayerAdded");
 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_TA.EventPlayerRemoved");
@@ -96,14 +95,13 @@ void RLTM::UnhookEvents()
 	--- WebSocket ---
 */
 
-void RLTM::InitSocket()
+void WSC::InitSocket()
 {
-	CVarWrapper wsUrl = cvarManager->getCvar("rltm_ws_url");
-	CVarWrapper wsToken = cvarManager->getCvar("rltm_ws_token");
+	CVarWrapper wsUrl = cvarManager->getCvar("wsc_url");
 
-	if (socket.getReadyState() != ix::ReadyState::Closed || !wsUrl || !wsToken) return;
+	if (socket.getReadyState() != ix::ReadyState::Closed || !wsUrl) return;
 
-	socket.setUrl("wss://" + wsUrl.getStringValue() + "/?token=" + wsToken.getStringValue());
+	socket.setUrl(wsUrl.getStringValue());
 	socket.setHandshakeTimeout(3);
 	socket.setPingInterval(1);
 	socket.enableAutomaticReconnection();
@@ -133,7 +131,7 @@ void RLTM::InitSocket()
 	socket.start();
 }
 
-void RLTM::SendSocketMessage(Event event, json payload)
+void WSC::SendSocketMessage(Event event, json payload)
 {
 	string topic = eventToTopic[event];
 
@@ -153,7 +151,7 @@ void RLTM::SendSocketMessage(Event event, json payload)
 	--- Game Data ---
 */
 
-ServerWrapper RLTM::GetServerWrapper()
+ServerWrapper WSC::GetServerWrapper()
 {
 	ServerWrapper onlineServer = gameWrapper->GetOnlineGame();
 	ServerWrapper localServer = gameWrapper->GetGameEventAsServer();
@@ -172,7 +170,7 @@ ServerWrapper RLTM::GetServerWrapper()
 	return NULL;
 }
 
-void RLTM::SetReplayState(bool state, string caller)
+void WSC::SetReplayState(bool state, string caller)
 {
 	if (isReplay == state) return;
 
@@ -180,7 +178,7 @@ void RLTM::SetReplayState(bool state, string caller)
 	GetMatchData(caller);
 }
 
-void RLTM::GetMatchData(string caller)
+void WSC::GetMatchData(string caller)
 {
 	if (caller == "onLoad") ResetDatas();
 
@@ -216,14 +214,14 @@ void RLTM::GetMatchData(string caller)
 		if (!threadRunning)
 		{
 			threadRunning = true;
-			thread asyncThread(&RLTM::SendEntitiesData, this);
+			thread asyncThread(&WSC::SendEntitiesData, this);
 			asyncThread.detach();
 		}
 	}
 	else threadRunning = false;
 }
 
-json RLTM::GetScore(ServerWrapper server)
+json WSC::GetScore(ServerWrapper server)
 {
 	json score = json::array();
 	if (!server) return score;
@@ -247,7 +245,7 @@ json RLTM::GetScore(ServerWrapper server)
 	return score;
 }
 
-json RLTM::GetStatistics(ServerWrapper server)
+json WSC::GetStatistics(ServerWrapper server)
 {
 	json statistics = json::object();
 	if (!server) return statistics;
@@ -288,7 +286,7 @@ json RLTM::GetStatistics(ServerWrapper server)
 	return statistics;
 }
 
-void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
+void WSC::GetPlayerStatData(ServerWrapper _server, void* params)
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
@@ -325,7 +323,7 @@ void RLTM::GetPlayerStatData(ServerWrapper _server, void* params)
 	SendSocketMessage(STATISTIC, payload);
 }
 
-void RLTM::GetEntitiesData()
+void WSC::GetEntitiesData()
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
@@ -401,7 +399,7 @@ void RLTM::GetEntitiesData()
 	entitiesData = payload;
 }
 
-void RLTM::SendEntitiesData()
+void WSC::SendEntitiesData()
 {
 	while (threadRunning)
 	{
@@ -410,7 +408,7 @@ void RLTM::SendEntitiesData()
 	}
 }
 
-void RLTM::GetPlayersData(ServerWrapper server)
+void WSC::GetPlayersData(ServerWrapper server)
 {
 	if (!server) return;
 
@@ -441,7 +439,7 @@ void RLTM::GetPlayersData(ServerWrapper server)
 	SendSocketMessage(PLAYERS, playersArray);
 }
 
-void RLTM::ResetDatas()
+void WSC::ResetDatas()
 {
 	SetReplayAutoSave(false);
 	threadRunning = false;
@@ -454,7 +452,7 @@ void RLTM::ResetDatas()
 /*
 	--- Game Replays ---
 */
-void RLTM::SetReplayAutoSave(bool status)
+void WSC::SetReplayAutoSave(bool status)
 {
 	if (autoSaveReplay == status) return;
 	autoSaveReplay = status;
@@ -466,7 +464,7 @@ void RLTM::SetReplayAutoSave(bool status)
 	--- Game HUD ---
 */
 
-void RLTM::SetSpectatorUI(int sleep)
+void WSC::SetSpectatorUI(int sleep)
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
@@ -484,7 +482,7 @@ void RLTM::SetSpectatorUI(int sleep)
 	}
 }
 
-void RLTM::SetStatGraph()
+void WSC::SetStatGraph()
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
@@ -496,7 +494,7 @@ void RLTM::SetStatGraph()
 	if (statGraphs) statGraphs.SetGraphLevel(6);
 }
 
-void RLTM::SetReady()
+void WSC::SetReady()
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
@@ -508,7 +506,7 @@ void RLTM::SetReady()
 	if (player) player.ServerReadyUp();
 }
 
-void RLTM::SetSpectator()
+void WSC::SetSpectator()
 {
 	ServerWrapper server = GetServerWrapper();
 	if (!server) return;
