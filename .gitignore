@@ -263,6 +263,10 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# VCPKG
+vcpkg/
+vcpkg_installed/
+
 # Visual Studio 6 build log
 *.plg
 
