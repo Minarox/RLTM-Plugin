@@ -7,6 +7,7 @@
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 #include "bakkesmod/wrappers/GameObject/Stats/StatEventWrapper.h"
+#include "PersistentStorage.h"
 
 #include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocket.h>
@@ -21,33 +22,33 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 using json = nlohmann::json;
 using namespace std;
 
-enum Event
-{
-	MATCH,
-	STATISTIC,
-	ENTITIES,
-	PLAYERS
-};
+// enum Event
+// {
+// 	MATCH,
+// 	STATISTIC,
+// 	ENTITIES,
+// 	PLAYERS
+// };
 
-map<Event, string> eventToTopic = {
-	{ MATCH, "match" },
-	{ STATISTIC, "statistic" },
-	{ ENTITIES, "entities" },
-	{ PLAYERS, "players" }
-};
+// map<Event, string> eventToTopic = {
+// 	{ MATCH, "match" },
+// 	{ STATISTIC, "statistic" },
+// 	{ ENTITIES, "entities" },
+// 	{ PLAYERS, "players" }
+// };
 
-struct StatTickerParams
-{
-	uintptr_t Receiver;
-	uintptr_t Victim;
-	uintptr_t StatEvent;
-};
+// struct StatTickerParams
+// {
+// 	uintptr_t Receiver;
+// 	uintptr_t Victim;
+// 	uintptr_t StatEvent;
+// };
 
-struct StatEventParams
-{
-	uintptr_t PRI;
-	uintptr_t StatEvent;
-};
+// struct StatEventParams
+// {
+// 	uintptr_t PRI;
+// 	uintptr_t StatEvent;
+// };
 
 class WSC: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
@@ -55,39 +56,43 @@ class WSC: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin
 	virtual void onLoad();
 	virtual void onUnload();
 
+	// Cvars and Notifiers
+	void registerCvars();
+	void registerNotifiers();
+
 	// Hooks
-	void HookEvents();
-	void UnhookEvents();
+	// void HookEvents();
+	// void UnhookEvents();
 
 	// WebSocket
-	ix::WebSocket socket;
-	json oldData;
-	void InitSocket();
-	void SendSocketMessage(Event event, json payload);
+	// ix::WebSocket socket;
+	// json oldData;
+	// void InitSocket();
+	// void SendSocketMessage(Event event, json payload);
 
 	// Game data
-	string tickBuffer = "";
-	bool isReplay = false;
-	bool threadRunning = false;
-	json entitiesData = json::object();
-	ServerWrapper GetServerWrapper();
-	void SetReplayState(bool state, string caller);
-	void GetMatchData(string caller);
-	json GetScore(ServerWrapper server);
-	json GetStatistics(ServerWrapper server);
-	void GetPlayerStatData(ServerWrapper _server, void* params);
-	void GetEntitiesData();
-	void SendEntitiesData();
-	void GetPlayersData(ServerWrapper server);
-	void ResetDatas();
+	// string tickBuffer = "";
+	// bool isReplay = false;
+	// bool threadRunning = false;
+	// json entitiesData = json::object();
+	// ServerWrapper GetServerWrapper();
+	// void SetReplayState(bool state, string caller);
+	// void GetMatchData(string caller);
+	// json GetScore(ServerWrapper server);
+	// json GetStatistics(ServerWrapper server);
+	// void GetPlayerStatData(ServerWrapper _server, void* params);
+	// void GetEntitiesData();
+	// void SendEntitiesData();
+	// void GetPlayersData(ServerWrapper server);
+	// void ResetDatas();
 
 	// Game Replays
-	bool autoSaveReplay = false;
-	void SetReplayAutoSave(bool status);
+	// bool autoSaveReplay = false;
+	// void SetReplayAutoSave(bool status);
 
 	// Game HUD
-	void SetSpectatorUI(int sleep);
-	void SetStatGraph();
-	void SetReady();
-	void SetSpectator();
+	// void SetSpectatorUI(int sleep);
+	// void SetStatGraph();
+	// void SetReady();
+	// void SetSpectator();
 };
