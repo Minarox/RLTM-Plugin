@@ -1,13 +1,16 @@
-# General
+# TODO
 
-- [ ] Rewrite README.md
-- [ ] Create branding
-- [ ] Publish plugin on BakkesMod
+## General
+
+- [ ] Register cvar
+- [ ] Register persistent cvar
+- [ ] Register notifier
+- [ ] Register hooks
 - [ ] Connect to server
-- [ ] Reconnect to server
 - [ ] Send messages to server
 - [ ] Receive messages from server
-- [ ] Split code in dedicated controller files
+- [ ] Disconnect from server
+
 
 ## Settings
 
@@ -24,3 +27,10 @@
 ## Events from the server
 
 - [ ] ...
+
+## Misc
+
+- [ ] Rewrite README.md
+- [ ] Create branding
+- [ ] Publish plugin on BakkesMod
+- [ ] Split code in dedicated controller files

@@ -3,51 +3,52 @@
 #pragma comment (lib, "ws2_32.lib")
 #pragma comment (lib, "crypt32.lib")
 
+#include <thread>
+#include <chrono>
+#include <ixwebsocket/IXNetSystem.h>
+#include <ixwebsocket/IXWebSocket.h>
+#include <nlohmann/json.hpp>
+
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 #include "bakkesmod/wrappers/GameObject/Stats/StatEventWrapper.h"
 
-#include <ixwebsocket/IXNetSystem.h>
-#include <ixwebsocket/IXWebSocket.h>
-#include <nlohmann/json.hpp>
-
-#include <thread>
-#include <chrono>
-
+#include "PersistentStorage.h"
 #include "version.h"
-constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 using json = nlohmann::json;
 using namespace std;
 
-enum Event
-{
-	MATCH,
-	STATISTIC,
-	ENTITIES,
-	PLAYERS
-};
+constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
-map<Event, string> eventToTopic = {
-	{ MATCH, "match" },
-	{ STATISTIC, "statistic" },
-	{ ENTITIES, "entities" },
-	{ PLAYERS, "players" }
-};
+// enum Event
+// {
+// 	MATCH,
+// 	STATISTIC,
+// 	ENTITIES,
+// 	PLAYERS
+// };
 
-struct StatTickerParams
-{
-	uintptr_t Receiver;
-	uintptr_t Victim;
-	uintptr_t StatEvent;
-};
+// map<Event, string> eventToTopic = {
+// 	{ MATCH, "match" },
+// 	{ STATISTIC, "statistic" },
+// 	{ ENTITIES, "entities" },
+// 	{ PLAYERS, "players" }
+// };
 
-struct StatEventParams
-{
-	uintptr_t PRI;
-	uintptr_t StatEvent;
-};
+// struct StatTickerParams
+// {
+// 	uintptr_t Receiver;
+// 	uintptr_t Victim;
+// 	uintptr_t StatEvent;
+// };
+
+// struct StatEventParams
+// {
+// 	uintptr_t PRI;
+// 	uintptr_t StatEvent;
+// };
 
 class WSC: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
 {
@@ -55,39 +56,40 @@ class WSC: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin
 	virtual void onLoad();
 	virtual void onUnload();
 
-	// Hooks
-	void HookEvents();
-	void UnhookEvents();
+	// Cvars, notifiers and events
+	void registerCvars();
+	void registerNotifiers();
+	void registerEvents();
+	void unregisterEvents();
 
 	// WebSocket
 	ix::WebSocket socket;
-	json oldData;
-	void InitSocket();
-	void SendSocketMessage(Event event, json payload);
+	// json oldData;
+	// void SendSocketMessage(Event event, json payload);
 
 	// Game data
-	string tickBuffer = "";
-	bool isReplay = false;
-	bool threadRunning = false;
-	json entitiesData = json::object();
-	ServerWrapper GetServerWrapper();
-	void SetReplayState(bool state, string caller);
-	void GetMatchData(string caller);
-	json GetScore(ServerWrapper server);
-	json GetStatistics(ServerWrapper server);
-	void GetPlayerStatData(ServerWrapper _server, void* params);
-	void GetEntitiesData();
-	void SendEntitiesData();
-	void GetPlayersData(ServerWrapper server);
-	void ResetDatas();
+	// string tickBuffer = "";
+	// bool isReplay = false;
+	// bool threadRunning = false;
+	// json entitiesData = json::object();
+	// ServerWrapper GetServerWrapper();
+	// void SetReplayState(bool state, string caller);
+	// void GetMatchData(string caller);
+	// json GetScore(ServerWrapper server);
+	// json GetStatistics(ServerWrapper server);
+	// void GetPlayerStatData(ServerWrapper _server, void* params);
+	// void GetEntitiesData();
+	// void SendEntitiesData();
+	// void GetPlayersData(ServerWrapper server);
+	// void ResetDatas();
 
 	// Game Replays
-	bool autoSaveReplay = false;
-	void SetReplayAutoSave(bool status);
+	// bool autoSaveReplay = false;
+	// void SetReplayAutoSave(bool status);
 
 	// Game HUD
-	void SetSpectatorUI(int sleep);
-	void SetStatGraph();
-	void SetReady();
-	void SetSpectator();
+	// void SetSpectatorUI(int sleep);
+	// void SetStatGraph();
+	// void SetReady();
+	// void SetSpectator();
 };
