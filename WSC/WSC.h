@@ -3,24 +3,24 @@
 #pragma comment (lib, "ws2_32.lib")
 #pragma comment (lib, "crypt32.lib")
 
-#include "bakkesmod/plugin/bakkesmodplugin.h"
-#include "bakkesmod/plugin/pluginwindow.h"
-#include "bakkesmod/plugin/PluginSettingsWindow.h"
-#include "bakkesmod/wrappers/GameObject/Stats/StatEventWrapper.h"
-#include "PersistentStorage.h"
-
+#include <thread>
+#include <chrono>
 #include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocket.h>
 #include <nlohmann/json.hpp>
 
-#include <thread>
-#include <chrono>
+#include "bakkesmod/plugin/bakkesmodplugin.h"
+#include "bakkesmod/plugin/pluginwindow.h"
+#include "bakkesmod/plugin/PluginSettingsWindow.h"
+#include "bakkesmod/wrappers/GameObject/Stats/StatEventWrapper.h"
 
+#include "PersistentStorage.h"
 #include "version.h"
-constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 using json = nlohmann::json;
 using namespace std;
+
+constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 // enum Event
 // {
@@ -56,18 +56,15 @@ class WSC: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin
 	virtual void onLoad();
 	virtual void onUnload();
 
-	// Cvars and Notifiers
+	// Cvars, notifiers and events
 	void registerCvars();
 	void registerNotifiers();
-
-	// Hooks
-	// void HookEvents();
-	// void UnhookEvents();
+	void registerEvents();
+	void unregisterEvents();
 
 	// WebSocket
-	// ix::WebSocket socket;
+	ix::WebSocket socket;
 	// json oldData;
-	// void InitSocket();
 	// void SendSocketMessage(Event event, json payload);
 
 	// Game data
