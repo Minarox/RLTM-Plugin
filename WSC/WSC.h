@@ -64,8 +64,8 @@ class WSC: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin
 
 	// WebSocket
 	ix::WebSocket socket;
-	// json oldData;
-	// void SendSocketMessage(Event event, json payload);
+	json dataBuffer;
+	void setWSCallbacks();
 
 	// Game data
 	// string tickBuffer = "";

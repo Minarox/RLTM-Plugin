@@ -2,19 +2,18 @@
 
 ## General
 
-- [ ] Register cvar
-- [ ] Register persistent cvar
-- [ ] Register notifier
+- [x] Register cvar
+- [x] Register persistent cvar
+- [x] Register notifier
 - [ ] Register hooks
 - [ ] Connect to server
 - [ ] Send messages to server
 - [ ] Receive messages from server
 - [ ] Disconnect from server
 
-
 ## Settings
 
-- [ ] Interact with plugin through CLI
+- [x] Interact with plugin through CLI
 - [ ] Create window settings
 - [ ] Add WebSocket server URL input
 - [ ] Add "Save", "Connect", "Reconnect" and "Disconnect" buttons
