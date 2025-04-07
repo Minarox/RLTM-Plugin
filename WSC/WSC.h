@@ -50,11 +50,14 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 // 	uintptr_t StatEvent;
 // };
 
-class WSC: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*/
+class WSC: public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
 {
 	// Boilerplate
-	virtual void onLoad();
-	virtual void onUnload();
+	void onLoad() override;
+	void onUnload() override;
+
+	// Window settings
+	void RenderSettings() override;
 
 	// Cvars, notifiers and events
 	void registerCvars();
