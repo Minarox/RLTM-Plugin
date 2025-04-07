@@ -11,58 +11,13 @@ shared_ptr<CVarManagerWrapper> _globalCvarManager;
 shared_ptr<PersistentStorage> _persistentStorage;
 
 void WSC::onLoad()
-{	
+{
 	_globalCvarManager = cvarManager;
 
 	// Required for ixwebsocket
 	ix::initNetSystem();
 
-	//socket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg)
-	//	{
-	//		switch (msg->type)
-	//		{
-	//		case ix::WebSocketMessageType::Open:
-	//			for (auto& [key, value] : oldData.items())
-	//			{
-	//				json data = json::object();
-	//				data["topic"] = key;
-	//				data["payload"] = value;
-	//				socket.send(data.dump());
-	//			}
-	//			break;
-	//		}
-	//	}
-	//);
-
-	socket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg)
-	{
-		switch (msg->type)
-		{
-			case ix::WebSocketMessageType::Open:
-				LOG("WebSocket connection opened");
-				break;
-
-			case ix::WebSocketMessageType::Message:
-				LOG("WebSocket message received: " + msg->str);
-				break;
-			
-			case ix::WebSocketMessageType::Close:
-				LOG("WebSocket connection closed");
-				break;
-			
-			case ix::WebSocketMessageType::Error:
-				LOG("WebSocket error: " + msg->errorInfo.reason);
-				break;
-			
-			case ix::WebSocketMessageType::Ping:
-				LOG("WebSocket ping");
-				break;
-			
-			case ix::WebSocketMessageType::Pong:
-				LOG("WebSocket pong");
-				break;
-		}
-	});
+	setWSCallbacks();
 
 	registerCvars();
 	registerNotifiers();
@@ -198,4 +153,37 @@ void WSC::unregisterEvents()
 	// 	gameWrapper->UnhookEvent("Function TAGame.GFxHUD_Spectator_TA.CycleHUD");
 	// 	gameWrapper->UnhookEvent("Function TAGame.StatGraphSystem_TA.GetDisplayGraphs");
 	// 	gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.BeginHighlightsReplay");
+}
+
+void WSC::setWSCallbacks()
+{
+	socket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg)
+	{
+		switch (msg->type)
+		{
+			case ix::WebSocketMessageType::Open:
+				LOG("WebSocket connection opened");
+				break;
+
+			case ix::WebSocketMessageType::Message:
+				LOG("WebSocket message received: " + msg->str);
+				break;
+
+			case ix::WebSocketMessageType::Close:
+				LOG("WebSocket connection closed");
+				break;
+
+			case ix::WebSocketMessageType::Error:
+				LOG("WebSocket error: " + msg->errorInfo.reason);
+				break;
+
+			case ix::WebSocketMessageType::Ping:
+				LOG("WebSocket ping");
+				break;
+
+			case ix::WebSocketMessageType::Pong:
+				LOG("WebSocket pong");
+				break;
+		}
+	});
 }
