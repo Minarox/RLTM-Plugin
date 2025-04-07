@@ -14,6 +14,7 @@
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 #include "bakkesmod/wrappers/GameObject/Stats/StatEventWrapper.h"
 
+#include "GuiBase.h"
 #include "PersistentStorage.h"
 #include "version.h"
 
