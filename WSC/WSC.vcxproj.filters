@@ -27,6 +27,9 @@
     <ClCompile Include="WSC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+	<ClCompile Include="GuiBase.cpp">
+	  <Filter>Source Files</Filter>
+	</ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -80,6 +83,9 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+	<ClInclude Include="GuiBase.h">
+	  <Filter>Header Files</Filter>
+	</ClInclude>
 	<ClInclude Include="PersistentStorage.h">
 		<Filter>Header Files</Filter>
 	</ClInclude>

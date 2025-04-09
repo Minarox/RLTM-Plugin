@@ -14,7 +14,7 @@
 ## Settings
 
 - [x] Interact with plugin through CLI
-- [ ] Create window settings
+- [x] Create window settings
 - [ ] Add WebSocket server URL input
 - [ ] Add "Save", "Connect", "Reconnect" and "Disconnect" buttons
 - [ ] Show current WebSocket connection state

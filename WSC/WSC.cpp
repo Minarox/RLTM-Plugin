@@ -187,3 +187,8 @@ void WSC::setWSCallbacks()
 		}
 	});
 }
+
+void WSC::RenderSettings()
+{
+    ImGui::TextUnformatted("WebSocket Controller plugin");
+}
