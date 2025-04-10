@@ -35,6 +35,9 @@ void WSC::onUnload()
 	unregisterEvents();
 	// ResetDatas();
 
+	// Disable auto save replays
+	cvarManager->executeCommand("ranked_autosavereplay_all 0", false);
+
 	// Required for ixwebsocket
 	ix::uninitNetSystem();
 }
@@ -49,6 +52,11 @@ void WSC::registerCvars()
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
 			if (cvar.getBoolValue()) socket.enableAutomaticReconnection();
 			else socket.disableAutomaticReconnection();
+		});
+
+	_persistentStorage->RegisterPersistentCvar("wsc_auto_save_replays", "1", "Auto reconnect to server", true, true, 0, true, 1)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+			cvarManager->executeCommand("ranked_autosavereplay_all " + cvar.getStringValue(), false);
 		});
 
 	_persistentStorage->RegisterPersistentCvar("wsc_handshake_timeout", "3", "Handshake timeout", true, true, 1)
@@ -191,4 +199,53 @@ void WSC::setWSCallbacks()
 void WSC::RenderSettings()
 {
     ImGui::TextUnformatted("WebSocket Controller plugin");
+	//ImGui::TextDisabled("v" + to_string(plugin_version).c_str());
+    ImGui::TextUnformatted("Author: @Minarox");
+
+	ImGui::Separator();
+
+	// ImGui::SeparatorText("WebSocket Configuration");
+	CVarWrapper autoConnect = cvarManager->getCvar("wsc_auto_connect");
+	if (!autoConnect) { return; }
+	bool enabled = autoConnect.getBoolValue();
+	if (ImGui::Checkbox("Auto connect to server when loaded", &enabled)) {
+		autoConnect.setValue(enabled);
+	}
+
+	CVarWrapper url = cvarManager->getCvar("wsc_url");
+	if (!url) { return; }
+	//static char urlInput[512] = to_string(url.getStringValue()).c_str();
+	//ImGui::InputText("WebSocket URL", urlInput, IM_ARRAYSIZE(urlInput));
+	ImGui::SameLine();
+	// TODO: Get socket state
+	if (ImGui::Button("Connect")) {
+		gameWrapper->Execute([this](GameWrapper* gw) {
+			cvarManager->executeCommand("wsc_connect");
+		});
+	}
+
+	ImGui::TextUnformatted("State: ");
+	ImGui::SameLine();
+
+	// TODO: Get socket state
+	ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 0.0f), "Disconnected");
+	// ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Connecting");
+	// ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Reconnecting");
+	// ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 0.0f), "Connected");
+
+	ImGui::SameLine();
+	// TODO: If lastSocketStateUpdate
+	ImGui::TextDisabled(" since ..."); // TODO: Show lastSocketStateUpdate date
+
+	if (ImGui::TreeNode("More WebSocket settings"))
+	{
+		// TODO: Add other socket settings
+		// wsc_auto_reconnect (checkbox)
+		// wsc_per_message_deflate (checkbox)
+		// wsc_handshake_timeout (integer input)
+		// wsc_max_wait_between_retries (integer input)
+		// wsc_min_wait_between_retries (integer input)
+		// wsc_ping_interval (integer input)
+		ImGui::TreePop();
+	}
 }
