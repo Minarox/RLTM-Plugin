@@ -35,6 +35,9 @@ void WSC::onUnload()
 	unregisterEvents();
 	// ResetDatas();
 
+	// Disable auto save replays
+	cvarManager->executeCommand("ranked_autosavereplay_all 0", false);
+
 	// Required for ixwebsocket
 	ix::uninitNetSystem();
 }
@@ -49,6 +52,11 @@ void WSC::registerCvars()
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
 			if (cvar.getBoolValue()) socket.enableAutomaticReconnection();
 			else socket.disableAutomaticReconnection();
+		});
+
+	_persistentStorage->RegisterPersistentCvar("wsc_auto_save_replays", "1", "Auto reconnect to server", true, true, 0, true, 1)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+			cvarManager->executeCommand("ranked_autosavereplay_all " + cvar.getStringValue(), false);
 		});
 
 	_persistentStorage->RegisterPersistentCvar("wsc_handshake_timeout", "3", "Handshake timeout", true, true, 1)
