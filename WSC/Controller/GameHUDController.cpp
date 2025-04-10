@@ -1,12 +1,5 @@
 #include "GameHUDController.h"
 
-void GameHUDController::SetReplayAutoSave(bool status, shared_ptr<CVarManagerWrapper> cvarManager, bool& autoSaveReplay)
-{
-	if (autoSaveReplay == status) return;
-	autoSaveReplay = status;
-	cvarManager->executeCommand("ranked_autosavereplay_all " + to_string(status ? 1 : 0), false);
-}
-
 void GameHUDController::SetSpectatorUI(int sleep, shared_ptr<GameWrapper> gameWrapper, shared_ptr<CVarManagerWrapper> cvarManager)
 {
 	ServerWrapper server = GetServerWrapper(gameWrapper);
