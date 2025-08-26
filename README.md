@@ -1,60 +1,30 @@
-<div id="top"></div>
-<br />
-
 <div align="center">
-<a href="https://github.com/Minarox/WSC-Plugin">
-    <img src="https://avatars.githubusercontent.com/u/71065703?v=4" alt="Logo Minarox" width="auto" height="80" style="border-radius: 4px">
-</a>
+  <img src="https://avatars.githubusercontent.com/u/71065703?v=4" alt="Logo" width="112px">
 
-<h3 align="center">WebSocket Controller Plugin</h3>
+  <h1>WebSocket Controller Plugin</h1>
 
-![Project version](https://img.shields.io/badge/Version-V1.0.0.458-blue)&nbsp;
-![Project License](https://img.shields.io/github/license/Minarox/WSC-Plugin?label=License)&nbsp;
+  Bi-directionnal communication between WebSocket server and Rocket League. <br />
+  <a href="https://minarox.github.io/WSC-Plugin"><b>Documentation »</b></a>
 
-  <p align="center">
-    WebSocket Controller Plugin for BakkesMod
-  </p>
+  <sub>
+    If you like this project, please star it & <a href="https://github.com/Minarox">follow me</a> to see what other cool projects I'm working on! ❤️
+  </sub>
 </div>
-<br />
 
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#tech-stack">Tech Stack</a></li>
-      </ul>
-    </li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#feedback">Feedback</a></li>
-    <li><a href="#author">Author</a></li>
-  </ol>
-</details>
+## ⭐️ Features
 
-## About The Project
+- 📃 **Data stream** - Send match, statistics and entities datas from the game in real time
+- 🔍 **Ready for stream** - Hide some parts of the HUD and Engine debug graph in spectator
+- ✅ **Shortcuts** - Automatically mark as ready and save replay file at the end of the match
+- ⚙️ **Configurable** - Change target server, events, automatic actions and more
 
-Stream real time data and remote control the game from a WebSocket server.
-
-### Features
-
-- Bi-directionnal communication with any WebSocket server
-- Send match, statistics and entities datas
-- Hide some parts of the HUD in spectator
-- Remove Engine debug graph in spectator
-- Automatically mark as ready at the end of the match
-- Automatically save replay at the end of the match
-
-### Tech Stack
+## 🛠️ Tech Stack
 
 - [BakkesModSDK](https://github.com/bakkesmodorg/BakkesModSDK)
 - [IXWebSocket](https://github.com/machinezone/IXWebSocket)
 - [nlohmann/json](https://github.com/nlohmann/json)
 
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-## Roadmap
+## 🚗 Roadmap
 
 - [x] WebSocket connection to server
 - [x] Automatic reconnection on interruption
@@ -72,17 +42,8 @@ Stream real time data and remote control the game from a WebSocket server.
 - [ ] Customize replay name
 - [ ] Plugin settings
 - [ ] Control the game from the server
+- [ ] Documentation
 
-<p align="right">(<a href="#top">back to top</a>)</p>
+## 💼 License
 
-## Feedback
-
-If you have any feedback, please reach out to us at [contact@minarox.fr](mailto:contact@minarox.fr).
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-## Author
-
-[@Minarox](https://www.github.com/Minarox)
-
-<p align="right">(<a href="#top">back to top</a>)</p>
+Apache 2.0 © [Mathis Serrieres Maniecki](https://github.com/Minarox)
