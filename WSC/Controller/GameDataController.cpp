@@ -233,8 +233,13 @@ void GameDataController::SendEntitiesData(json& entitiesData, bool& threadRunnin
 {
 	while (threadRunning)
 	{
-		SendSocketMessage(ENTITIES, entitiesData, oldData);
-		this_thread::sleep_for(chrono::milliseconds(100));
+		try {
+			SendSocketMessage(ENTITIES, entitiesData, oldData);
+		}
+		catch (...) {}
+		finally {
+			this_thread::sleep_for(chrono::milliseconds(100));
+		}
 	}
 }
 
