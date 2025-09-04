@@ -54,7 +54,7 @@ void WSC::registerCvars()
 			else socket.disableAutomaticReconnection();
 		});
 
-	_persistentStorage->RegisterPersistentCvar("wsc_auto_save_replays", "1", "Auto reconnect to server", true, true, 0, true, 1)
+	_persistentStorage->RegisterPersistentCvar("wsc_auto_save_replays", "1", "Auto save replay after the game", true, true, 0, true, 1)
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
 			cvarManager->executeCommand("ranked_autosavereplay_all " + cvar.getStringValue(), false);
 		});
@@ -183,14 +183,6 @@ void WSC::setWSCallbacks()
 
 			case ix::WebSocketMessageType::Error:
 				LOG("WebSocket error: " + msg->errorInfo.reason);
-				break;
-
-			case ix::WebSocketMessageType::Ping:
-				LOG("WebSocket ping");
-				break;
-
-			case ix::WebSocketMessageType::Pong:
-				LOG("WebSocket pong");
 				break;
 		}
 	});
